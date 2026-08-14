@@ -1,4 +1,3 @@
-import type { Education, Experience, Language, Profile, Skill } from "@/lib/db";
 import type { FullProfile } from "@/lib/profile";
 
 /* ── Templates ─────────────────────────────────────────────────────────────── */
@@ -85,10 +84,10 @@ export interface CvData {
   firstName: string;
   lastName: string;
   headline: string;
-  /** Display string, e.g. "13.07.2003". */
+  /** Display string, e.g. "TT.MM.JJJJ". */
   birthDate: string;
   contact: CvContact;
-  /** "Casablanca, Marokko" – used by the reference template contact row. */
+  /** Generic display location, e.g. "Stadt, Land". */
   location: string;
   /** Profile summary (PROFIL section). */
   about: string;
@@ -143,13 +142,6 @@ function fmtYear(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? iso : String(d.getFullYear());
 }
 
-function fmtBirthDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 /* ── Factories ─────────────────────────────────────────────────────────────── */
 
 export function createEmptyCvData(): CvData {
@@ -177,73 +169,6 @@ export function createEmptyCvData(): CvData {
     experience: { id: CV_SECTIONS.experience.id, title: CV_SECTIONS.experience.title, items: [] },
     internships: { id: CV_SECTIONS.internships.id, title: CV_SECTIONS.internships.title, items: [] },
     education: { id: CV_SECTIONS.education.id, title: CV_SECTIONS.education.title, items: [] },
-  };
-}
-
-function experienceEntry(row: Experience): CvEntry {
-  return {
-    id: row.id,
-    role: row.position.trim(),
-    company: row.company.trim(),
-    location: row.location?.trim() ?? "",
-    startDate: fmtYear(row.start_date),
-    endDate: row.current ? "" : fmtYear(row.end_date),
-    current: row.current,
-    description: row.description?.trim() ?? "",
-  };
-}
-
-function educationEntry(row: Education): CvEntry {
-  const role = [row.institution.trim(), row.degree?.trim() ? `(${row.degree.trim()})` : null]
-    .filter(Boolean)
-    .join(" ");
-  return {
-    id: row.id,
-    role,
-    company: row.field_of_study?.trim() || row.institution.trim(),
-    location: "",
-    startDate: fmtYear(row.start_date),
-    endDate: fmtYear(row.end_date),
-    current: false,
-    description: row.description?.trim() ?? "",
-  };
-}
-
-/**
- * Build the initial editable CV from verified profile data (never invents content).
- * The result is the default value of the CV form; every field stays editable.
- */
-export function buildCvData(profile: FullProfile): CvData {
-  const p: Profile | null = profile.profile;
-  const firstName = p?.first_name?.trim() ?? "";
-  const lastName = p?.last_name?.trim() ?? "";
-  const cityPart = [p?.city, p?.postal_code].filter(Boolean).join(", ");
-  const location = [cityPart, p?.country].filter(Boolean).join(", ");
-
-  return {
-    fullName: [firstName, lastName].filter(Boolean).join(" ") || "Vollständiger Name",
-    firstName,
-    lastName,
-    headline: p?.headline?.trim() || p?.job_title?.trim() || "",
-    birthDate: fmtBirthDate(p?.birth_date ?? null),
-    contact: {
-      email: p?.email ?? null,
-      phone: p?.phone ?? null,
-      address: p?.address ?? null,
-      city: cityPart || null,
-      postalCode: null,
-      country: null,
-      website: null,
-    },
-    location,
-    about: p?.about ?? "",
-    photoDataUrl: p?.photo_url ?? null,
-    photoName: "",
-    skills: profile.skills.map((s: Skill) => ({ name: s.name, level: s.level })),
-    languages: profile.languages.map((l: Language) => ({ name: l.name, level: l.level, description: "" })),
-    experience: { id: CV_SECTIONS.experience.id, title: CV_SECTIONS.experience.title, items: profile.experience.map(experienceEntry) },
-    internships: { id: CV_SECTIONS.internships.id, title: CV_SECTIONS.internships.title, items: [] },
-    education: { id: CV_SECTIONS.education.id, title: CV_SECTIONS.education.title, items: profile.education.map(educationEntry) },
   };
 }
 

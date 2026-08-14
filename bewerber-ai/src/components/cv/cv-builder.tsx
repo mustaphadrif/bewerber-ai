@@ -15,7 +15,7 @@ import {
   ACCENT_COLORS,
   CV_TEMPLATES,
   DEFAULT_CV_OPTIONS,
-  buildCvData,
+  createEmptyCvData,
   cvDataFromSaved,
   fullNameOf,
   isCvTemplateId,
@@ -24,7 +24,6 @@ import {
   type CvEntry,
   type CvOptions,
 } from "@/lib/cv";
-import type { FullProfile } from "@/lib/profile";
 import { saveCvDocument, deleteCvDocument } from "@/lib/cv-actions";
 import type { CvDocument, Json } from "@/lib/db";
 import { createClient } from "@/lib/supabase/client";
@@ -73,11 +72,11 @@ async function uploadPhotoToStorage(dataUrl: string): Promise<string | null> {
   }
 }
 
-export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocument[] }) {
+export function CvBuilder({ saved }: { saved: CvDocument[] }) {
   const router = useRouter();
   const [options, setOptions] = useState<CvOptions>({ ...DEFAULT_CV_OPTIONS });
   const [title, setTitle] = useState("Lebenslauf");
-  const [draft, setDraft] = useState<CvData>(() => buildCvData(full));
+  const [draft, setDraft] = useState<CvData>(() => createEmptyCvData());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -235,8 +234,8 @@ export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocumen
       <div>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Lebenslauf</h1>
         <p className="mt-1 text-muted-foreground">
-          Bearbeite deine Daten direkt – die Vorschau aktualisiert sich live. Als Startwerte werden deine verifizierten
-          Profildaten übernommen.
+          Starte mit einem leeren CV und trage deine Daten direkt ein – die Vorschau aktualisiert sich live. Gespeicherte
+          Versionen kannst du jederzeit laden.
         </p>
       </div>
 
@@ -254,29 +253,29 @@ export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocumen
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Vorname">
-                  <Input value={draft.firstName} onChange={(e) => setField("firstName", e.target.value)} placeholder="Mustapha" />
+                  <Input value={draft.firstName} onChange={(e) => setField("firstName", e.target.value)} placeholder="Max" />
                 </Field>
                 <Field label="Nachname">
-                  <Input value={draft.lastName} onChange={(e) => setField("lastName", e.target.value)} placeholder="Drif" />
+                  <Input value={draft.lastName} onChange={(e) => setField("lastName", e.target.value)} placeholder="Mustermann" />
                 </Field>
               </div>
               <Field label="Titel / Berufsbezeichnung">
-                <Input value={draft.headline} onChange={(e) => setField("headline", e.target.value)} placeholder="Kaufmann im E-Commerce" />
+                  <Input value={draft.headline} onChange={(e) => setField("headline", e.target.value)} placeholder="z. B. Kaufmann im E-Commerce" />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="E-Mail">
                   <Input type="email" value={draft.contact.email ?? ""} onChange={(e) => setContact("email", e.target.value)} placeholder="name@example.com" />
                 </Field>
                 <Field label="Telefon">
-                  <Input value={draft.contact.phone ?? ""} onChange={(e) => setContact("phone", e.target.value)} placeholder="+212 777 258 019" />
+                  <Input value={draft.contact.phone ?? ""} onChange={(e) => setContact("phone", e.target.value)} placeholder="+49 170 1234567" />
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Ort">
-                  <Input value={draft.location} onChange={(e) => setField("location", e.target.value)} placeholder="Casablanca, Marokko" />
+                  <Input value={draft.location} onChange={(e) => setField("location", e.target.value)} placeholder="Berlin" />
                 </Field>
                 <Field label="Geburtsdatum">
-                  <Input value={draft.birthDate} onChange={(e) => setField("birthDate", e.target.value)} placeholder="13.07.2003" />
+                  <Input value={draft.birthDate} onChange={(e) => setField("birthDate", e.target.value)} placeholder="TT.MM.JJJJ" />
                 </Field>
               </div>
               <Field label="Foto (JPG/PNG)">
@@ -334,7 +333,7 @@ export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocumen
                 value={draft.about}
                 onChange={(e) => setField("about", e.target.value)}
                 rows={6}
-                placeholder="Motivierter Bewerber für die Ausbildung zum Kaufmann im E-Commerce …"
+                placeholder="z. B. Motivierte Bewerberin mit Interesse an digitalen Geschäftsprozessen …"
               />
             </CardContent>
           </Card>
@@ -375,7 +374,7 @@ export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocumen
                   <Input
                     value={s.name}
                     onChange={(e) => setSkill(i, e.target.value)}
-                    placeholder="z. B. E-Commerce & Online-Shop-Management"
+                    placeholder="z. B. Kundenservice oder Projektmanagement"
                   />
                   <Button type="button" variant="outline" size="icon" onClick={() => removeSkill(i)} aria-label="Kenntnis entfernen">
                     <Trash2 className="h-4 w-4" />
@@ -397,7 +396,7 @@ export function CvBuilder({ full, saved }: { full: FullProfile; saved: CvDocumen
               {draft.languages.map((l, i) => (
                 <div key={i} className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
                   <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                    <Input value={l.name} onChange={(e) => setLanguage(i, { name: e.target.value })} placeholder="Arabisch" />
+                    <Input value={l.name} onChange={(e) => setLanguage(i, { name: e.target.value })} placeholder="z. B. Deutsch" />
                     <Input value={l.level} onChange={(e) => setLanguage(i, { level: e.target.value })} placeholder="Muttersprache / B2 / …" />
                     <Button type="button" variant="outline" size="icon" onClick={() => removeLanguage(i)} aria-label="Sprache entfernen">
                       <Trash2 className="h-4 w-4" />
@@ -627,7 +626,7 @@ function EntrySectionCard({
                 <Input
                   value={e.role}
                   onChange={(ev) => onChange(e.id, { role: ev.target.value })}
-                  placeholder="Selbstständig – E-Commerce"
+                  placeholder="z. B. Projektassistenz"
                 />
               </div>
               <div className="space-y-1.5">
@@ -635,7 +634,7 @@ function EntrySectionCard({
                 <Input
                   value={e.company}
                   onChange={(ev) => onChange(e.id, { company: ev.target.value })}
-                  placeholder="MainThèrm SARL"
+                  placeholder="z. B. Beispiel GmbH"
                 />
               </div>
             </div>
@@ -645,7 +644,7 @@ function EntrySectionCard({
                 <Input
                   value={e.startDate}
                   onChange={(ev) => onChange(e.id, { startDate: ev.target.value })}
-                  placeholder="2024"
+                  placeholder="z. B. 2024"
                 />
               </div>
               <div className="space-y-1.5">
@@ -653,7 +652,7 @@ function EntrySectionCard({
                 <Input
                   value={e.endDate}
                   onChange={(ev) => onChange(e.id, { endDate: ev.target.value })}
-                  placeholder="2025"
+                  placeholder="z. B. 2025"
                 />
               </div>
               <div className="space-y-1.5">
@@ -661,7 +660,7 @@ function EntrySectionCard({
                 <Input
                   value={e.location}
                   onChange={(ev) => onChange(e.id, { location: ev.target.value })}
-                  placeholder="Casablanca"
+                  placeholder="Berlin"
                 />
               </div>
               <div className="flex items-end pb-1">
@@ -685,7 +684,7 @@ function EntrySectionCard({
                 value={e.description}
                 onChange={(ev) => onChange(e.id, { description: ev.target.value })}
                 rows={4}
-                placeholder={"Betreuung von Kundenanfragen per E-Mail und Chat\nBearbeitung von Bestellungen und Retouren"}
+                placeholder={"z. B. Betreuung von Kundenanfragen\nOrganisation von Aufgaben und Abläufen"}
               />
             </div>
           </div>
