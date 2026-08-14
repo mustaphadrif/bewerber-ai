@@ -1,36 +1,46 @@
-import type { CvData, CvOptions } from "@/lib/cv";
-import { formatRange } from "@/lib/cv";
+import type { CvData, CvEntry, CvOptions } from "@/lib/cv";
+import { entryPeriod } from "@/lib/cv";
+import { Calendar, Mail, MapPin, Phone } from "lucide-react";
 
 /**
- * Live CV preview — a pure function of verified profile data + options.
- * Rendered with inline styles so it mirrors the generated PDF.
+ * Live CV preview — a pure function of the editable CV data + options.
+ * The reference template mirrors the generated PDF (A4, narrow margins,
+ * circular photo top-right, thin black rules, exact section order).
+ * Rendered with inline styles; print CSS paginates to A4 with natural breaks.
  */
 export function CvPreview({ data, options }: { data: CvData; options: CvOptions }) {
   const { template, fontSize, accentColor } = options;
   const accent = { color: accentColor };
 
+  if (template === "referenz") {
+    return <ReferenzPreview data={data} options={options} />;
+  }
+
   if (template === "modern") {
     return (
       <div className="cv-paper flex overflow-hidden rounded-lg bg-white text-left shadow-inner" style={{ fontSize }}>
-        {/* Sidebar */}
         <aside className="w-[34%] shrink-0 px-6 py-8 text-white" style={{ background: accentColor }}>
           <SidebarBlock title="Kontakt" items={contactLines(data)} />
           <SidebarBlock title="Fähigkeiten" items={data.skills.slice(0, 10).map((s) => s.name)} />
-          <SidebarBlock title="Sprachen" items={data.languages.map((l) => `${l.name} (${l.level})`)} />
+          <SidebarBlock title="Sprachen" items={data.languages.map((l) => (l.level ? `${l.name} (${l.level})` : l.name))} />
         </aside>
-        {/* Main */}
         <div className="flex-1 px-7 py-8">
           <h1 className="text-2xl font-bold" style={{ color: accentColor }}>{data.fullName}</h1>
           {data.headline && <p className="mt-0.5 text-sm font-medium text-slate-500">{data.headline}</p>}
           {data.about && <p className="mt-3 text-[0.92em] leading-relaxed text-slate-600">{data.about}</p>}
           <Section title={data.experience.title} accent={accent}>
             {data.experience.items.map((e) => (
-              <Entry key={e.id} title={e.position} subtitle={`${e.company}${e.location ? ` · ${e.location}` : ""}`} range={formatRange(e.start_date, e.end_date, e.current)} text={e.description} />
+              <Entry key={e.id} e={e} />
+            ))}
+          </Section>
+          <Section title={data.internships.title} accent={accent}>
+            {data.internships.items.map((e) => (
+              <Entry key={e.id} e={e} />
             ))}
           </Section>
           <Section title={data.education.title} accent={accent}>
             {data.education.items.map((e) => (
-              <Entry key={e.id} title={e.degree || "Abschluss"} subtitle={e.institution} range={e.end_date ? e.end_date.slice(0, 4) : undefined} text={e.field_of_study} />
+              <Entry key={e.id} e={e} />
             ))}
           </Section>
         </div>
@@ -62,7 +72,15 @@ export function CvPreview({ data, options }: { data: CvData; options: CvOptions 
         <h2 className="mb-2 text-[1.05em] font-semibold uppercase tracking-wide" style={accent}>{data.experience.title}</h2>
         {data.experience.items.length === 0 && <EmptyLine />}
         {data.experience.items.map((e) => (
-          <Entry key={e.id} title={e.position} subtitle={`${e.company}${e.location ? ` · ${e.location}` : ""}`} range={formatRange(e.start_date, e.end_date, e.current)} text={e.description} />
+          <Entry key={e.id} e={e} />
+        ))}
+      </section>
+
+      <section className="mt-5">
+        <h2 className="mb-2 text-[1.05em] font-semibold uppercase tracking-wide" style={accent}>{data.internships.title}</h2>
+        {data.internships.items.length === 0 && <EmptyLine />}
+        {data.internships.items.map((e) => (
+          <Entry key={e.id} e={e} />
         ))}
       </section>
 
@@ -70,7 +88,7 @@ export function CvPreview({ data, options }: { data: CvData; options: CvOptions 
         <h2 className="mb-2 text-[1.05em] font-semibold uppercase tracking-wide" style={accent}>{data.education.title}</h2>
         {data.education.items.length === 0 && <EmptyLine />}
         {data.education.items.map((e) => (
-          <Entry key={e.id} title={e.degree || "Abschluss"} subtitle={e.institution} range={e.end_date ? e.end_date.slice(0, 4) : undefined} text={e.field_of_study} />
+          <Entry key={e.id} e={e} />
         ))}
       </section>
 
@@ -80,7 +98,7 @@ export function CvPreview({ data, options }: { data: CvData; options: CvOptions 
           <p className="text-[0.92em] text-slate-700">
             {data.skills.map((s) => s.name).join(", ")}
             {data.skills.length > 0 && data.languages.length > 0 ? " · " : ""}
-            {data.languages.map((l) => `${l.name} (${l.level})`).join(", ")}
+            {data.languages.map((l) => (l.level ? `${l.name} (${l.level})` : l.name)).join(", ")}
           </p>
         </section>
       )}
@@ -88,8 +106,165 @@ export function CvPreview({ data, options }: { data: CvData; options: CvOptions 
   );
 }
 
+/* ── Reference template preview ────────────────────────────────────────────── */
+
+function ReferenzPreview({ data, options }: { data: CvData; options: CvOptions }) {
+  const showPhoto = options.includePhoto && Boolean(data.photoDataUrl);
+  const contact: { icon: "mail" | "phone" | "pin" | "calendar"; text: string }[] = [];
+  if (data.contact.email) contact.push({ icon: "mail", text: data.contact.email });
+  if (data.contact.phone) contact.push({ icon: "phone", text: data.contact.phone });
+  if (data.location) contact.push({ icon: "pin", text: data.location });
+  if (data.birthDate) contact.push({ icon: "calendar", text: data.birthDate });
+
+  return (
+    <div className="cv-referenz cv-sheet cv-print-root relative mx-auto rounded-lg bg-white px-[11mm] py-[11mm] text-left text-[#111827] shadow-inner">
+      <style>{REFERENZ_PRINT_CSS}</style>
+
+      {/* Header: name/title left, circular photo right */}
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight text-[#111827]">{data.fullName || "Name Vorname"}</h1>
+          {data.headline && (
+            <p className="mt-1 text-[12px] font-semibold text-[#111827]">{data.headline}</p>
+          )}
+        </div>
+        {showPhoto ? (
+          <img
+            src={data.photoDataUrl as string}
+            alt="Bewerbungsfoto"
+            className="cv-photo h-[30mm] w-[30mm] shrink-0 rounded-full border border-slate-200 object-cover"
+          />
+        ) : null}
+      </header>
+
+      {/* Contact row with icons */}
+      {contact.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[10.5px] text-[#111827]">
+          {contact.map((c) => (
+            <span key={c.icon + c.text} className="flex items-center gap-1.5">
+              <ContactIcon kind={c.icon} />
+              <span>{c.text}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3.5 border-t-2 border-[#111827]" />
+
+      {data.about.trim() && (
+        <section className="cv-avoid mt-4">
+          <SectionTitle>Profil</SectionTitle>
+          <p className="mt-1 whitespace-pre-line text-[10.5px] leading-relaxed text-[#111827]">{data.about}</p>
+        </section>
+      )}
+
+      <SectionBlock title={data.experience.title} items={data.experience.items} />
+      <SectionBlock title={data.internships.title} items={data.internships.items} />
+      <SectionBlock title={data.education.title} items={data.education.items} />
+
+      {/* Kenntnisse – two columns */}
+      <section className="cv-avoid mt-4">
+        <SectionTitle>Kenntnisse</SectionTitle>
+        {data.skills.length === 0 ? (
+          <EmptyLine />
+        ) : (
+          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-[10.5px] font-semibold text-[#111827]">
+            {data.skills.map((s) => (
+              <span key={s.name} className="flex gap-1.5">
+                <span aria-hidden>•</span>
+                <span>{s.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Sprachen – three columns */}
+      <section className="cv-avoid mt-4">
+        <SectionTitle>Sprachen</SectionTitle>
+        {data.languages.length === 0 ? (
+          <EmptyLine />
+        ) : (
+          <div className="mt-1 grid grid-cols-3 gap-x-4 gap-y-1 text-[10.5px] text-[#111827]">
+            {data.languages.map((l) => (
+              <span key={l.name} className="flex gap-1.5">
+                <span aria-hidden>•</span>
+                <span>{l.level ? `${l.name}: ${l.level}` : l.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function SectionBlock({ title, items }: { title: string; items: CvEntry[] }) {
+  return (
+    <section className="cv-avoid mt-4">
+      <SectionTitle>{title}</SectionTitle>
+      {items.length === 0 ? (
+        <EmptyLine />
+      ) : (
+        <div className="mt-1 space-y-3">
+          {items.map((e) => (
+            <Entry key={e.id} e={e} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-[11.5px] font-bold uppercase tracking-wide text-[#111827]">{children}</h2>;
+}
+
+function Entry({ e }: { e: CvEntry }) {
+  const period = entryPeriod(e);
+  return (
+    <div className="cv-avoid-break">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[11px] font-bold text-[#111827]">{e.role || e.company}</span>
+        {(period || e.location) && (
+          <span className="shrink-0 text-right text-[9.5px] text-[#111827]">
+            {period}
+            {period && e.location ? <br /> : " "}
+            {e.location}
+          </span>
+        )}
+      </div>
+      {e.company && e.company !== e.role && (
+        <div className="text-[10px] italic text-[#334155]">{e.company}</div>
+      )}
+      {e.description.trim() && (
+        <ul className="mt-0.5 space-y-0.5 text-[10.5px] leading-relaxed text-[#111827]">
+          {e.description.split("\n").map((line, i) =>
+            line.trim() ? (
+              <li key={i} className="flex gap-1.5">
+                <span aria-hidden>•</span>
+                <span>{line.trim()}</span>
+              </li>
+            ) : null
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ContactIcon({ kind }: { kind: "mail" | "phone" | "pin" | "calendar" }) {
+  const cls = "h-3.5 w-3.5 shrink-0";
+  if (kind === "mail") return <Mail className={cls} aria-hidden />;
+  if (kind === "phone") return <Phone className={cls} aria-hidden />;
+  if (kind === "pin") return <MapPin className={cls} aria-hidden />;
+  return <Calendar className={cls} aria-hidden />;
+}
+
+/* ── Shared helpers for the legacy templates ───────────────────────────────── */
+
 function contactLines(data: CvData): string[] {
-  return [data.contact.email, data.contact.phone, data.contact.city].filter(Boolean) as string[];
+  return [data.contact.email, data.contact.phone, data.location].filter(Boolean) as string[];
 }
 
 function SidebarBlock({ title, items }: { title: string; items: string[] }) {
@@ -113,19 +288,19 @@ function Section({ title, accent, children }: { title: string; accent: { color: 
   );
 }
 
-function Entry({ title, subtitle, range, text }: { title: string; subtitle: string; range?: string; text?: string | null }) {
-  return (
-    <div className="mb-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-semibold text-slate-800">{title}</span>
-        {range && <span className="shrink-0 text-[0.85em] text-slate-400">{range}</span>}
-      </div>
-      <div className="text-[0.9em] font-medium text-slate-500">{subtitle}</div>
-      {text && <p className="mt-0.5 text-[0.9em] leading-relaxed text-slate-600">{text}</p>}
-    </div>
-  );
+function EmptyLine() {
+  return <p className="mt-1 text-[10px] italic text-slate-400">Noch keine Einträge.</p>;
 }
 
-function EmptyLine() {
-  return <p className="text-[0.9em] italic text-slate-400">Noch keine Einträge – ergänze sie im Profil.</p>;
+/* ── Print styles: A4 pagination, breaks only when content needs them ─────── */
+
+const REFERENZ_PRINT_CSS = `
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  .cv-print-root { box-shadow: none !important; border-radius: 0 !important; width: 210mm; min-height: 296mm; }
+  .cv-avoid { break-inside: avoid; }
+  .cv-avoid-break { break-inside: avoid; }
+  .cv-photo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+`;

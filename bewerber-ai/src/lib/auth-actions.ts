@@ -57,25 +57,12 @@ export async function signInWithGoogle(): Promise<AuthActionResult> {
   const supabase = await createClient();
   if (!supabase) return noEnv();
   const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const { data, error } = await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: {
-    redirectTo: `${origin}/auth/callback`,
-  },
-});
-
-if (error) {
-  return { ok: false, error: error.message };
-}
-
-if (data.url) {
-  redirect(data.url);
-}
-
-return {
-  ok: false,
-  error: "Google OAuth URL was not returned.",
-};
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback` },
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 export async function signOutAction(): Promise<void> {
