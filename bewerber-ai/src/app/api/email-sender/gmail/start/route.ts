@@ -30,8 +30,8 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set("es_gmail_state", state, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+    secure: true,
     maxAge: 600,
     path: "/",
   });
