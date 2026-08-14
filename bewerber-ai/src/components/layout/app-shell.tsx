@@ -13,6 +13,7 @@ import {
   PenLine,
   Briefcase,
   Building2,
+  Mail,
   User,
   Settings,
   LogOut,
@@ -31,6 +32,7 @@ const NAV = [
   { href: "/anschreiben", label: "Anschreiben", icon: PenLine },
   { href: "/bewerbungen", label: "Bewerbungen", icon: Briefcase },
   { href: "/unternehmen", label: "Unternehmen", icon: Building2 },
+  { href: "/email-sender", label: "E-Mail Sender", icon: Mail },
   { href: "/profile", label: "Profil", icon: User },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];

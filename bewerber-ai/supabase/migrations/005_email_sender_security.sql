@@ -1,0 +1,22 @@
+-- Email Sender — attachment privacy hardening (additive migration).
+--
+-- Drops the owner-scoped SELECT policy on public.email_attachments so that
+-- authenticated clients can no longer read attachment bytes (content_b64).
+--
+-- Server-side access is preserved:
+--  * the delivery worker reads bytes with the service-role client
+--    (src/lib/email/worker.ts, SUPABASE_SERVICE_ROLE_KEY env-only);
+--  * the upload route writes bytes and returns only metadata through the
+--    service-role client (src/app/api/email-sender/attachments/route.ts).
+-- The browser keeps metadata only (upload response / campaign attachments
+-- JSON) and never receives content_b64.
+--
+-- No metadata-only view is created here: metadata already flows through the
+-- upload response and email_campaigns.attachments JSON, both of which exclude
+-- content_b64. If a metadata-only view is ever added, it must exclude
+-- content_b64 and stay owner-scoped under RLS.
+--
+-- Additive and re-runnable: touches no other table, policy, function, or
+-- seed data.
+
+drop policy if exists "email_attachments_select_own" on public.email_attachments;
