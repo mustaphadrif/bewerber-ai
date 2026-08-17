@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCampaignDetail } from "@/lib/email/actions";
 import { CampaignDetail } from "@/components/email-sender/campaign-detail";
+import { getI18n } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Kampagnen-Details" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("pages.campaignDetail") };
+}
 
 export default async function EmailSenderDetailPage({
   params,

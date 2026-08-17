@@ -1,17 +1,21 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n/client";
 import type { ApplicationStatus } from "@/lib/db";
 
-const STATUS_META: Record<ApplicationStatus, { label: string; variant: "default" | "secondary" | "outline" | "success" | "warning" | "destructive" | "blue" }> = {
-  interessiert: { label: "Interessiert", variant: "secondary" },
-  beworben: { label: "Beworben", variant: "blue" },
-  gesehen: { label: "Gesehen", variant: "outline" },
-  interview: { label: "Interview", variant: "warning" },
-  angebot: { label: "Angebot", variant: "success" },
-  abgelehnt: { label: "Abgelehnt", variant: "destructive" },
-  archiviert: { label: "Archiviert", variant: "secondary" },
+const STATUS_VARIANTS: Record<ApplicationStatus, "default" | "secondary" | "outline" | "success" | "warning" | "destructive" | "blue"> = {
+  interessiert: "secondary",
+  beworben: "blue",
+  gesehen: "outline",
+  interview: "warning",
+  angebot: "success",
+  abgelehnt: "destructive",
+  archiviert: "secondary",
 };
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
-  const meta = STATUS_META[status] ?? STATUS_META.interessiert;
-  return <Badge variant={meta.variant}>{meta.label}</Badge>;
+  const { t } = useI18n();
+  const variant = STATUS_VARIANTS[status] ?? STATUS_VARIANTS.interessiert;
+  return <Badge variant={variant}>{t(`applications.statuses.${status}`)}</Badge>;
 }

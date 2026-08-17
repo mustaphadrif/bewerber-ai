@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert } from "@/components/ui/alert";
 import { CvPreview } from "@/components/cv/cv-preview";
 import { exportCvPdf } from "@/lib/cv-pdf";
+import { useI18n } from "@/lib/i18n/client";
+import type { TranslateFn } from "@/lib/i18n/translate";
 import {
   ACCENT_COLORS,
   CV_TEMPLATES,
@@ -34,10 +36,10 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 type EntrySectionKey = "experience" | "internships" | "education";
 
-const ENTRY_SECTION_LABELS: Record<EntrySectionKey, string> = {
-  experience: "Berufserfahrung",
-  internships: "Praktikum",
-  education: "Schulbildung",
+const ENTRY_SECTION_KEYS: Record<EntrySectionKey, EntrySectionKey> = {
+  experience: "experience",
+  internships: "internships",
+  education: "education",
 };
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -74,8 +76,9 @@ async function uploadPhotoToStorage(dataUrl: string): Promise<string | null> {
 
 export function CvBuilder({ saved }: { saved: CvDocument[] }) {
   const router = useRouter();
+  const { t, formatDate } = useI18n();
   const [options, setOptions] = useState<CvOptions>({ ...DEFAULT_CV_OPTIONS });
-  const [title, setTitle] = useState("Lebenslauf");
+  const [title, setTitle] = useState(() => t("cv.title"));
   const [draft, setDraft] = useState<CvData>(() => createEmptyCvData());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -143,11 +146,11 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
   function handlePhotoFile(file: File | null) {
     if (!file) return;
     if (!/^image\/(jpeg|png)$/.test(file.type)) {
-      setError("Nur JPG/JPEG/PNG-Dateien sind erlaubt.");
+      setError(t("cv.errors.photoType"));
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      setError("Das Foto darf maximal 5 MB groß sein.");
+      setError(t("cv.errors.photoSize"));
       return;
     }
     const reader = new FileReader();
@@ -155,7 +158,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
       setDraft((d) => ({ ...d, photoDataUrl: String(reader.result), photoName: file.name }));
       setError(null);
     };
-    reader.onerror = () => setError("Das Foto konnte nicht gelesen werden.");
+    reader.onerror = () => setError(t("cv.errors.photoRead"));
     reader.readAsDataURL(file);
   }
 
@@ -175,8 +178,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
         resolvedPhoto = stored;
       } else if (draft.photoDataUrl.length > INLINE_PHOTO_LIMIT) {
         resolvedPhoto = null;
-        photoNote =
-          "Foto ist zu groß, um ohne Storage eingebettet zu werden – es wird nur in dieser Vorschau angezeigt und nicht gespeichert.";
+        photoNote = t("cv.notices.photoTooLarge");
       }
     }
 
@@ -186,7 +188,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
     const content: Json = JSON.parse(JSON.stringify(finalDraft));
     startTransition(async () => {
       const result = await saveCvDocument({
-        title: title.trim() || "Lebenslauf",
+        title: title.trim() || t("cv.title"),
         template: options.template,
         font_size: options.fontSize,
         accent_color: options.accentColor,
@@ -194,10 +196,10 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
         content,
       });
       if (!result.ok) {
-        setError(result.error ?? "Speichern fehlgeschlagen.");
+        setError(result.error ?? t("cv.errors.save"));
         return;
       }
-      setNotice(photoNote ?? "Version gespeichert.");
+      setNotice(photoNote ?? t("cv.notices.saved"));
       router.refresh();
     });
   }
@@ -213,7 +215,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
     }));
     setTitle(cv.title);
     setError(null);
-    setNotice(`Version „${cv.title}“ geladen.`);
+    setNotice(t("cv.notices.loaded", { title: cv.title }));
   }
 
   async function handleDownload() {
@@ -221,9 +223,9 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
     setNotice(null);
     try {
       await exportCvPdf(draft, options);
-      setNotice("PDF heruntergeladen – erstellt aus deinen aktuellen CV-Daten.");
+      setNotice(t("cv.notices.pdfDownloaded"));
     } catch {
-      setError("PDF konnte nicht erstellt werden.");
+      setError(t("cv.errors.pdf"));
     }
   }
 
@@ -232,10 +234,9 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Lebenslauf</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("cv.title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          Starte mit einem leeren CV und trage deine Daten direkt ein – die Vorschau aktualisiert sich live. Gespeicherte
-          Versionen kannst du jederzeit laden.
+          {t("cv.subtitle")}
         </p>
       </div>
 
@@ -247,48 +248,48 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
         <div className="space-y-4 lg:col-span-3">
           <Card>
             <CardHeader>
-              <CardTitle>Persönliche Daten</CardTitle>
-              <CardDescription>Name, Titel, Kontakt, Geburtsdatum und Foto</CardDescription>
+              <CardTitle>{t("cv.personalData")}</CardTitle>
+              <CardDescription>{t("cv.personalDataDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Vorname">
-                  <Input value={draft.firstName} onChange={(e) => setField("firstName", e.target.value)} placeholder="Max" />
+                <Field label={t("cv.firstName")}>
+                  <Input value={draft.firstName} onChange={(e) => setField("firstName", e.target.value)} placeholder={t("cv.firstNamePh")} />
                 </Field>
-                <Field label="Nachname">
-                  <Input value={draft.lastName} onChange={(e) => setField("lastName", e.target.value)} placeholder="Mustermann" />
+                <Field label={t("cv.lastName")}>
+                  <Input value={draft.lastName} onChange={(e) => setField("lastName", e.target.value)} placeholder={t("cv.lastNamePh")} />
                 </Field>
               </div>
-              <Field label="Titel / Berufsbezeichnung">
-                  <Input value={draft.headline} onChange={(e) => setField("headline", e.target.value)} placeholder="z. B. Kaufmann im E-Commerce" />
+              <Field label={t("cv.headline")}>
+                  <Input value={draft.headline} onChange={(e) => setField("headline", e.target.value)} placeholder={t("cv.headlinePh")} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="E-Mail">
-                  <Input type="email" value={draft.contact.email ?? ""} onChange={(e) => setContact("email", e.target.value)} placeholder="name@example.com" />
+                <Field label={t("cv.email")}>
+                  <Input type="email" value={draft.contact.email ?? ""} onChange={(e) => setContact("email", e.target.value)} placeholder={t("cv.emailPh")} />
                 </Field>
-                <Field label="Telefon">
-                  <Input value={draft.contact.phone ?? ""} onChange={(e) => setContact("phone", e.target.value)} placeholder="+49 170 1234567" />
+                <Field label={t("cv.phone")}>
+                  <Input value={draft.contact.phone ?? ""} onChange={(e) => setContact("phone", e.target.value)} placeholder={t("cv.phonePh")} />
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Ort">
-                  <Input value={draft.location} onChange={(e) => setField("location", e.target.value)} placeholder="Berlin" />
+                <Field label={t("cv.location")}>
+                  <Input value={draft.location} onChange={(e) => setField("location", e.target.value)} placeholder={t("cv.locationPh")} />
                 </Field>
-                <Field label="Geburtsdatum">
-                  <Input value={draft.birthDate} onChange={(e) => setField("birthDate", e.target.value)} placeholder="TT.MM.JJJJ" />
+                <Field label={t("cv.birthDate")}>
+                  <Input value={draft.birthDate} onChange={(e) => setField("birthDate", e.target.value)} placeholder={t("cv.birthDatePh")} />
                 </Field>
               </div>
-              <Field label="Foto (JPG/PNG)">
+              <Field label={t("cv.photo")}>
                 <div className="flex items-center gap-4">
                   {photoPreview ? (
                     <img
                       src={photoPreview}
-                      alt="Foto-Vorschau"
+                      alt={t("cv.photoAlt")}
                       className="h-20 w-20 rounded-full border border-border object-cover"
                     />
                   ) : (
                     <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-border bg-muted/50 text-xs text-muted-foreground">
-                      kein Foto
+                      {t("cv.noPhoto")}
                     </div>
                   )}
                   <div className="space-y-2">
@@ -298,10 +299,10 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                         className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-muted"
                       >
                         <Upload className="h-4 w-4" />
-                        {draft.photoDataUrl ? "Ersetzen" : "Foto wählen"}
+                        {draft.photoDataUrl ? t("cv.photoReplace") : t("cv.photoChoose")}
                       </label>
                       {draft.photoDataUrl && (
-                        <Button type="button" variant="outline" size="icon" onClick={removePhoto} aria-label="Foto entfernen">
+                        <Button type="button" variant="outline" size="icon" onClick={removePhoto} aria-label={t("cv.photoRemoveAria")}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -314,8 +315,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                       onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Erscheint rund oben rechts. Wird beim Speichern mitgespeichert (Supabase Storage oder eingebettet,
-                      sofern größenmäßig sinnvoll).
+                      {t("cv.photoHint")}
                     </p>
                   </div>
                 </div>
@@ -325,38 +325,41 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Profil</CardTitle>
-              <CardDescription>Zusammenfassung unter „Profil“</CardDescription>
+              <CardTitle>{t("cv.profile")}</CardTitle>
+              <CardDescription>{t("cv.profileDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={draft.about}
                 onChange={(e) => setField("about", e.target.value)}
                 rows={6}
-                placeholder="z. B. Motivierte Bewerberin mit Interesse an digitalen Geschäftsprozessen …"
+                placeholder={t("cv.aboutPh")}
               />
             </CardContent>
           </Card>
 
           <EntrySectionCard
-            title={ENTRY_SECTION_LABELS.experience}
-            hint="Position, Firma, Zeitraum, Ort und Stichpunkte (eine pro Zeile)"
+            t={t}
+            title={t(`cv.sections.${ENTRY_SECTION_KEYS.experience}`)}
+            hint={t("cv.hints.experience")}
             entries={draft.experience.items}
             onChange={(id, patch) => setEntry("experience", id, patch)}
             onAdd={() => addEntry("experience")}
             onRemove={(id) => removeEntry("experience", id)}
           />
           <EntrySectionCard
-            title={ENTRY_SECTION_LABELS.internships}
-            hint="Praktika – gleiche Felder wie Berufserfahrung"
+            t={t}
+            title={t(`cv.sections.${ENTRY_SECTION_KEYS.internships}`)}
+            hint={t("cv.hints.internships")}
             entries={draft.internships.items}
             onChange={(id, patch) => setEntry("internships", id, patch)}
             onAdd={() => addEntry("internships")}
             onRemove={(id) => removeEntry("internships", id)}
           />
           <EntrySectionCard
-            title={ENTRY_SECTION_LABELS.education}
-            hint="Schulbildung/Ausbildung – Abschluss, Einrichtung, Zeitraum"
+            t={t}
+            title={t(`cv.sections.${ENTRY_SECTION_KEYS.education}`)}
+            hint={t("cv.hints.education")}
             entries={draft.education.items}
             onChange={(id, patch) => setEntry("education", id, patch)}
             onAdd={() => addEntry("education")}
@@ -365,8 +368,8 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Kenntnisse</CardTitle>
-              <CardDescription>Werden zweispaltig dargestellt</CardDescription>
+              <CardTitle>{t("cv.skills")}</CardTitle>
+              <CardDescription>{t("cv.skillsDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2.5">
               {draft.skills.map((s, i) => (
@@ -374,43 +377,43 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                   <Input
                     value={s.name}
                     onChange={(e) => setSkill(i, e.target.value)}
-                    placeholder="z. B. Kundenservice oder Projektmanagement"
+                    placeholder={t("cv.skillPh")}
                   />
-                  <Button type="button" variant="outline" size="icon" onClick={() => removeSkill(i)} aria-label="Kenntnis entfernen">
+                  <Button type="button" variant="outline" size="icon" onClick={() => removeSkill(i)} aria-label={t("cv.removeSkillAria")}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={addSkill}>
-                <Plus className="h-4 w-4" /> Kenntnis hinzufügen
+                <Plus className="h-4 w-4" /> {t("cv.addSkill")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Sprachen</CardTitle>
-              <CardDescription>Name, Niveau und optionale Beschreibung – werden dreispaltig dargestellt</CardDescription>
+              <CardTitle>{t("cv.languages")}</CardTitle>
+              <CardDescription>{t("cv.languagesDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {draft.languages.map((l, i) => (
                 <div key={i} className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
                   <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                    <Input value={l.name} onChange={(e) => setLanguage(i, { name: e.target.value })} placeholder="z. B. Deutsch" />
-                    <Input value={l.level} onChange={(e) => setLanguage(i, { level: e.target.value })} placeholder="Muttersprache / B2 / …" />
-                    <Button type="button" variant="outline" size="icon" onClick={() => removeLanguage(i)} aria-label="Sprache entfernen">
+                    <Input value={l.name} onChange={(e) => setLanguage(i, { name: e.target.value })} placeholder={t("cv.languagePh")} />
+                    <Input value={l.level} onChange={(e) => setLanguage(i, { level: e.target.value })} placeholder={t("cv.languageLevelPh")} />
+                    <Button type="button" variant="outline" size="icon" onClick={() => removeLanguage(i)} aria-label={t("cv.removeLanguageAria")}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                   <Input
                     value={l.description}
                     onChange={(e) => setLanguage(i, { description: e.target.value })}
-                    placeholder="Optionale Beschreibung (nur für Referenz/Ausdruck optional)"
+                    placeholder={t("cv.languageDescPh")}
                   />
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={addLanguage}>
-                <Plus className="h-4 w-4" /> Sprache hinzufügen
+                <Plus className="h-4 w-4" /> {t("cv.addLanguage")}
               </Button>
             </CardContent>
           </Card>
@@ -421,30 +424,30 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
           <div className="space-y-4 lg:sticky lg:top-6">
             <Card>
               <CardHeader>
-                <CardTitle>Vorlage & Export</CardTitle>
-                <CardDescription>Die Referenz-Vorlage ist die Standard-Vorlage</CardDescription>
+                <CardTitle>{t("cv.templateExport")}</CardTitle>
+                <CardDescription>{t("cv.templateExportDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2.5">
-                  {CV_TEMPLATES.map((t) => (
+                  {CV_TEMPLATES.map((tmpl) => (
                     <button
-                      key={t.id}
-                      onClick={() => setOptions((o) => ({ ...o, template: t.id }))}
-                      className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
-                        options.template === t.id
+                      key={tmpl.id}
+                      onClick={() => setOptions((o) => ({ ...o, template: tmpl.id }))}
+                      className={`w-full rounded-lg border px-4 py-3 text-start transition-colors ${
+                        options.template === tmpl.id
                           ? "border-primary bg-blue-50/60 ring-1 ring-primary/30"
                           : "border-border hover:bg-muted"
                       }`}
                     >
-                      <div className="text-sm font-medium text-slate-900">{t.label}</div>
-                      <div className="text-xs text-muted-foreground">{t.description}</div>
+                      <div className="text-sm font-medium text-slate-900">{t(`cv.templates.${tmpl.id}.label`)}</div>
+                      <div className="text-xs text-muted-foreground">{t(`cv.templates.${tmpl.id}.description`)}</div>
                     </button>
                   ))}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label htmlFor="cv-font">Schriftgröße</Label>
+                    <Label htmlFor="cv-font">{t("cv.fontSize")}</Label>
                     <Select
                       id="cv-font"
                       value={options.fontSize}
@@ -456,13 +459,13 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                     </Select>
                   </div>
                   <div>
-                    <Label>Akzentfarbe</Label>
+                    <Label>{t("cv.accentColor")}</Label>
                     <div className="mt-1.5 flex flex-wrap gap-2">
                       {ACCENT_COLORS.map((c) => (
                         <button
                           key={c}
                           onClick={() => setOptions((o) => ({ ...o, accentColor: c }))}
-                          aria-label={`Farbe ${c}`}
+                          aria-label={t("cv.colorAria", { color: c })}
                           className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${
                             options.accentColor === c ? "border-slate-900" : "border-transparent"
                           }`}
@@ -480,24 +483,24 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                     onChange={(e) => setOptions((o) => ({ ...o, includePhoto: e.target.checked }))}
                     className="h-4 w-4 rounded accent-blue-600"
                   />
-                  Foto einfügen
+                  {t("cv.includePhoto")}
                 </label>
 
                 <div>
-                  <Label htmlFor="cv-title">Titel der gespeicherten Version</Label>
+                  <Label htmlFor="cv-title">{t("cv.versionTitle")}</Label>
                   <Input id="cv-title" value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
 
                 <div className="flex gap-2">
                   <Button className="flex-1" onClick={handleSave} loading={pending}>
-                    <Save className="h-4 w-4" /> Speichern
+                    <Save className="h-4 w-4" /> {t("cv.save")}
                   </Button>
                   <Button variant="outline" className="flex-1" onClick={handleDownload} loading={pending}>
-                    <Download className="h-4 w-4" /> PDF laden
+                    <Download className="h-4 w-4" /> {t("cv.downloadPdf")}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  PDF wird direkt im Browser erzeugt (jsPDF) mit auswählbarem Text – keine Daten verlassen dein Gerät.
+                  {t("cv.pdfNote")}
                 </p>
               </CardContent>
             </Card>
@@ -505,9 +508,9 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
             <Card className="overflow-hidden">
               <CardHeader className="flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Live-Vorschau</CardTitle>
+                  <CardTitle>{t("cv.livePreview")}</CardTitle>
                   <CardDescription>
-                    Vorlage „{CV_TEMPLATES.find((t) => t.id === options.template)?.label}“ · A4
+                    {t("cv.previewDesc", { template: t(`cv.templates.${CV_TEMPLATES.find((x) => x.id === options.template)?.id ?? "referenz"}.label`) })}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -523,8 +526,8 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
             {saved.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Gespeicherte Versionen</CardTitle>
-                  <CardDescription>{saved.length} gespeichert</CardDescription>
+                  <CardTitle>{t("cv.savedVersions")}</CardTitle>
+                  <CardDescription>{t("cv.savedCount", { count: saved.length })}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {saved.map((cv) => (
@@ -536,7 +539,7 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-slate-900">{cv.title}</div>
                           <div className="text-xs text-muted-foreground">
-                            {cv.template} · {new Date(cv.updated_at).toLocaleDateString("de-DE")}
+                            {cv.template} · {formatDate(cv.updated_at)}
                           </div>
                         </div>
                       </div>
@@ -545,9 +548,9 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleLoad(cv)}
-                          aria-label={`Version laden: ${cv.title}`}
+                          aria-label={t("cv.loadAria", { title: cv.title })}
                         >
-                          <FolderOpen className="h-4 w-4" /> Laden
+                          <FolderOpen className="h-4 w-4" /> {t("cv.load")}
                         </Button>
                         <Button
                           variant="outline"
@@ -558,14 +561,14 @@ export function CvBuilder({ saved }: { saved: CvDocument[] }) {
                               setNotice(null);
                               const result = await deleteCvDocument(cv.id);
                               if (!result.ok) {
-                                setError(result.error ?? "Löschen fehlgeschlagen.");
+                                setError(result.error ?? t("cv.errors.delete"));
                                 return;
                               }
-                              setNotice("Version gelöscht.");
+                              setNotice(t("cv.notices.deleted"));
                               router.refresh();
                             })
                           }
-                          aria-label="Löschen"
+                          aria-label={t("cv.deleteAria")}
                         >
                           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
@@ -598,6 +601,7 @@ function EntrySectionCard({
   onChange,
   onAdd,
   onRemove,
+  t,
 }: {
   title: string;
   hint: string;
@@ -605,6 +609,7 @@ function EntrySectionCard({
   onChange: (id: string, patch: Partial<CvEntry>) => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
+  t: TranslateFn;
 }) {
   return (
     <Card>
@@ -615,56 +620,56 @@ function EntrySectionCard({
       <CardContent className="space-y-3">
         {entries.length === 0 && (
           <p className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            Noch keine Einträge.
+            {t("cv.entry.empty")}
           </p>
         )}
         {entries.map((e) => (
           <div key={e.id} className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-500">Position / Rolle</Label>
+                <Label className="text-xs text-slate-500">{t("cv.entry.role")}</Label>
                 <Input
                   value={e.role}
                   onChange={(ev) => onChange(e.id, { role: ev.target.value })}
-                  placeholder="z. B. Projektassistenz"
+                  placeholder={t("cv.entry.rolePh")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-500">Firma / Einrichtung</Label>
+                <Label className="text-xs text-slate-500">{t("cv.entry.company")}</Label>
                 <Input
                   value={e.company}
                   onChange={(ev) => onChange(e.id, { company: ev.target.value })}
-                  placeholder="z. B. Beispiel GmbH"
+                  placeholder={t("cv.entry.companyPh")}
                 />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-500">Von</Label>
+                <Label className="text-xs text-slate-500">{t("cv.entry.from")}</Label>
                 <Input
                   value={e.startDate}
                   onChange={(ev) => onChange(e.id, { startDate: ev.target.value })}
-                  placeholder="z. B. 2024"
+                  placeholder={t("cv.entry.fromPh")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-500">Bis</Label>
+                <Label className="text-xs text-slate-500">{t("cv.entry.to")}</Label>
                 <Input
                   value={e.endDate}
                   onChange={(ev) => onChange(e.id, { endDate: ev.target.value })}
-                  placeholder="z. B. 2025"
+                  placeholder={t("cv.entry.toPh")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-500">Ort</Label>
+                <Label className="text-xs text-slate-500">{t("cv.entry.location")}</Label>
                 <Input
                   value={e.location}
                   onChange={(ev) => onChange(e.id, { location: ev.target.value })}
-                  placeholder="Berlin"
+                  placeholder={t("cv.entry.locationPh")}
                 />
               </div>
               <div className="flex items-end pb-1">
-                <Button type="button" variant="outline" size="icon" onClick={() => onRemove(e.id)} aria-label="Eintrag entfernen">
+                <Button type="button" variant="outline" size="icon" onClick={() => onRemove(e.id)} aria-label={t("cv.entry.removeAria")}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -676,21 +681,21 @@ function EntrySectionCard({
                 onChange={(ev) => onChange(e.id, { current: ev.target.checked })}
                 className="h-4 w-4 rounded accent-blue-600"
               />
-              Aktuell („– heute“)
+              {t("cv.entry.current")}
             </label>
             <div className="space-y-1.5">
-              <Label className="text-xs text-slate-500">Beschreibung / Stichpunkte (eine pro Zeile)</Label>
+              <Label className="text-xs text-slate-500">{t("cv.entry.description")}</Label>
               <Textarea
                 value={e.description}
                 onChange={(ev) => onChange(e.id, { description: ev.target.value })}
                 rows={4}
-                placeholder={"z. B. Betreuung von Kundenanfragen\nOrganisation von Aufgaben und Abläufen"}
+                placeholder={t("cv.entry.descriptionPh")}
               />
             </div>
           </div>
         ))}
         <Button type="button" variant="outline" size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4" /> Eintrag hinzufügen
+          <Plus className="h-4 w-4" /> {t("cv.entry.add")}
         </Button>
       </CardContent>
     </Card>

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { profileCompletion } from "@/lib/cv";
+import { useI18n } from "@/lib/i18n/client";
 import type { FullProfile } from "@/lib/profile";
 import {
   generateCoverLetterAction,
@@ -24,6 +25,7 @@ const TONES = ["professionell", "motiviert", "formell"] as const;
 
 export function CoverLetterBuilder({ full, letters }: { full: FullProfile; letters: CoverLetter[] }) {
   const router = useRouter();
+  const { t, formatDate } = useI18n();
   const [mode, setMode] = useState<"ki" | "manuell">("ki");
   const [form, setForm] = useState({
     companyName: "",
@@ -68,7 +70,7 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
         return;
       }
       setResult(res.content ?? null);
-      setNotice("Anschreiben erstellt und gespeichert. Nur verifizierte Profildaten wurden verwendet.");
+      setNotice(t("coverLetter.notices.created"));
       router.refresh();
     });
   }
@@ -87,7 +89,7 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
         setError(res.error);
         return;
       }
-      setNotice("Anschreiben gespeichert.");
+      setNotice(t("coverLetter.notices.saved"));
       setManualContent("");
       router.refresh();
     });
@@ -96,9 +98,9 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Anschreiben</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("coverLetter.title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          Ehrlich und individuell: Der KI-Assistent arbeitet ausschließlich mit deinen verifizierten Profildaten und erfindet keine Qualifikationen.
+          {t("coverLetter.subtitle")}
         </p>
       </div>
 
@@ -107,8 +109,7 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
         <Alert variant="warning" className="flex items-start gap-3">
           <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            <strong>Anbieter-Schlüssel fehlt.</strong> Für die KI-Generierung wird{" "}
-            <code className="rounded bg-white/60 px-1">COVER_LETTER_API_KEY</code> in der Umgebung benötigt. Alternativ kannst du im Tab „Manuell verfassen“ dein Anschreiben selbst schreiben und speichern.
+            <strong>{t("coverLetter.keyMissing")}</strong> {t("coverLetter.keyMissingText")}
           </span>
         </Alert>
       )}
@@ -123,13 +124,13 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
                   onClick={() => setMode("ki")}
                   className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${mode === "ki" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}
                 >
-                  <Sparkles className="h-4 w-4" /> KI-Assistent
+                  <Sparkles className="h-4 w-4" /> {t("coverLetter.tabAi")}
                 </button>
                 <button
                   onClick={() => setMode("manuell")}
                   className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${mode === "manuell" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}
                 >
-                  <PenLine className="h-4 w-4" /> Manuell verfassen
+                  <PenLine className="h-4 w-4" /> {t("coverLetter.tabManual")}
                 </button>
               </div>
             </CardContent>
@@ -137,61 +138,63 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
 
           <Card>
             <CardHeader>
-              <CardTitle>Stelleninformationen</CardTitle>
-              <CardDescription>Für beide Modi erforderlich</CardDescription>
+              <CardTitle>{t("coverLetter.jobInfo")}</CardTitle>
+              <CardDescription>{t("coverLetter.jobInfoDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="cl-company">Unternehmen *</Label>
-                <Input id="cl-company" value={form.companyName} onChange={set("companyName")} placeholder="z. B. SAP SE" />
+                <Label htmlFor="cl-company">{t("coverLetter.company")}</Label>
+                <Input id="cl-company" value={form.companyName} onChange={set("companyName")} placeholder={t("coverLetter.companyPh")} />
               </div>
               <div>
-                <Label htmlFor="cl-title">Position *</Label>
-                <Input id="cl-title" value={form.jobTitle} onChange={set("jobTitle")} placeholder="z. B. Senior Product Manager" />
+                <Label htmlFor="cl-title">{t("coverLetter.position")}</Label>
+                <Input id="cl-title" value={form.jobTitle} onChange={set("jobTitle")} placeholder={t("coverLetter.positionPh")} />
               </div>
               <div>
-                <Label htmlFor="cl-recipient">Ansprechpartner (optional)</Label>
-                <Input id="cl-recipient" value={form.recipientName} onChange={set("recipientName")} placeholder="z. B. Frau Dr. Schmidt" />
+                <Label htmlFor="cl-recipient">{t("coverLetter.recipient")}</Label>
+                <Input id="cl-recipient" value={form.recipientName} onChange={set("recipientName")} placeholder={t("coverLetter.recipientPh")} />
               </div>
               <div>
-                <Label htmlFor="cl-url">Stellenanzeige (URL, optional)</Label>
-                <Input id="cl-url" type="url" value={form.jobUrl} onChange={set("jobUrl")} placeholder="https://…" />
+                <Label htmlFor="cl-url">{t("coverLetter.url")}</Label>
+                <Input id="cl-url" type="url" value={form.jobUrl} onChange={set("jobUrl")} placeholder={t("coverLetter.urlPh")} />
               </div>
               {mode === "ki" && (
                 <>
                   <div>
-                    <Label htmlFor="cl-tone">Tonfall</Label>
+                    <Label htmlFor="cl-tone">{t("coverLetter.tone")}</Label>
                     <Select id="cl-tone" value={form.tone} onChange={set("tone")}>
-                      {TONES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      {TONES.map((tone) => <option key={tone} value={tone}>{t(`coverLetter.tones.${tone}`)}</option>)}
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="cl-points">Schwerpunkte (kommagetrennt)</Label>
-                    <Input id="cl-points" value={form.keyPoints} onChange={set("keyPoints")} placeholder="z. B. E-Commerce, agile Teams" />
+                    <Label htmlFor="cl-points">{t("coverLetter.keyPoints")}</Label>
+                    <Input id="cl-points" value={form.keyPoints} onChange={set("keyPoints")} placeholder={t("coverLetter.keyPointsPh")} />
                   </div>
                   <div>
-                    <Label htmlFor="cl-notes">Notizen zum Unternehmen</Label>
-                    <Textarea id="cl-notes" rows={3} value={form.companyNotes} onChange={set("companyNotes")} placeholder="Fakten, die du erwähnen möchtest (z. B. aus der Stellenanzeige)" />
+                    <Label htmlFor="cl-notes">{t("coverLetter.companyNotes")}</Label>
+                    <Textarea id="cl-notes" rows={3} value={form.companyNotes} onChange={set("companyNotes")} placeholder={t("coverLetter.companyNotesPh")} />
                   </div>
                   <Button className="w-full" onClick={handleGenerate} loading={pending} disabled={!form.companyName.trim() || !form.jobTitle.trim()}>
-                    <Sparkles className="h-4 w-4" /> Anschreiben generieren
+                    <Sparkles className="h-4 w-4" /> {t("coverLetter.generate")}
                   </Button>
                 </>
               )}
               {mode === "manuell" && (
                 <>
                   <div>
-                    <Label htmlFor="cl-manual">Dein Text</Label>
+                    <Label htmlFor="cl-manual">{t("coverLetter.manualText")}</Label>
                     <Textarea
                       id="cl-manual"
                       rows={12}
                       value={manualContent}
                       onChange={(e) => setManualContent(e.target.value)}
-                      placeholder={"Sehr geehrte Damen und Herren,\n\n…\n\nMit freundlichen Grüßen\n" + ([full.profile?.first_name, full.profile?.last_name].filter(Boolean).join(" ") || "")}
+                      placeholder={t("coverLetter.manualPh", {
+                        name: [full.profile?.first_name, full.profile?.last_name].filter(Boolean).join(" ") || "",
+                      })}
                     />
                   </div>
                   <Button className="w-full" variant="outline" onClick={handleManualSave} loading={pending} disabled={!form.companyName.trim() || !form.jobTitle.trim() || !manualContent.trim()}>
-                    <Save className="h-4 w-4" /> Manuell speichern
+                    <Save className="h-4 w-4" /> {t("coverLetter.manualSave")}
                   </Button>
                 </>
               )}
@@ -203,9 +206,9 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
         <div className="space-y-4 lg:col-span-3">
           <Card>
             <CardHeader>
-              <CardTitle>Ergebnis</CardTitle>
+              <CardTitle>{t("coverLetter.result")}</CardTitle>
               <CardDescription>
-                {result ? `Vorschau für ${form.companyName || "Unternehmen"}` : "Hier erscheint dein Anschreiben."}
+                {result ? t("coverLetter.resultPreview", { company: form.companyName || t("common.unknown") }) : t("coverLetter.resultEmpty")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -218,8 +221,8 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
                   <PenLine className="h-8 w-8 text-slate-300" />
                   <p className="max-w-sm text-sm text-muted-foreground">
                     {mode === "ki"
-                      ? "Fülle die Stelleninformationen aus und generiere dein Anschreiben. Es basiert ausschließlich auf deinem verifizierten Profil."
-                      : "Schreibe dein Anschreiben selbst und speichere es – ganz ohne KI."}
+                      ? t("coverLetter.emptyAi")
+                      : t("coverLetter.emptyManual")}
                   </p>
                 </div>
               )}
@@ -228,16 +231,16 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
 
           {completion < 60 && (
             <Alert variant="info">
-              Dein Profil ist erst zu {completion}% gefüllt. Ein vollständigeres Profil führt zu besseren Anschreiben –{" "}
-              <a href="/profile" className="font-medium underline">Profil vervollständigen</a>.
+              {t("coverLetter.profileHint", { percent: completion })}{" "}
+              <a href="/profile" className="font-medium underline">{t("coverLetter.completeProfile")}</a>.
             </Alert>
           )}
 
           {letters.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Gespeicherte Anschreiben</CardTitle>
-                <CardDescription>{letters.length} gespeichert</CardDescription>
+                <CardTitle>{t("coverLetter.savedTitle")}</CardTitle>
+                <CardDescription>{t("coverLetter.savedCount", { count: letters.length })}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {letters.map((l) => (
@@ -246,7 +249,11 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
                       <div>
                         <div className="text-sm font-medium text-slate-900">{l.job_title} · {l.company_name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {l.generated_by} · {new Date(l.created_at).toLocaleDateString("de-DE")}
+                          {l.generated_by.startsWith("ki-") || l.generated_by === "ai"
+                            ? t("coverLetter.sourceAi")
+                            : l.generated_by === "manuell" || l.generated_by === "manual"
+                              ? t("coverLetter.sourceManual")
+                              : l.generated_by} · {formatDate(l.created_at)}
                         </div>
                       </div>
                       <button
@@ -255,12 +262,12 @@ export function CoverLetterBuilder({ full, letters }: { full: FullProfile; lette
                             const res = await deleteCoverLetter(l.id);
                             if (res.ok) {
                               router.refresh();
-                              setNotice("Anschreiben gelöscht.");
+                              setNotice(t("coverLetter.notices.deleted"));
                             } else setError(res.error);
                           })
                         }
                         className="rounded-md p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                        aria-label="Löschen"
+                        aria-label={t("coverLetter.deleteAria")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

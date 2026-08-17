@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { parsePastedText, parseRecipientFile, type RecipientParseResult } from "@/lib/email/parse";
 import { normalizeEmail } from "@/lib/email/validation";
+import { useI18n } from "@/lib/i18n/client";
 import type { DraftRecipient } from "@/lib/email/types";
 import { Plus, Upload, Trash2, Users } from "lucide-react";
 
@@ -25,6 +26,7 @@ interface RecipientImportProps {
  * text-layer/binary fallback and clearly report when nothing is found.
  */
 export function RecipientImport({ value, onChange, limit }: RecipientImportProps) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pasteText, setPasteText] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -39,14 +41,14 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
     const fresh = result.rows.filter((r) => !existing.has(r.email));
     const accepted = fresh.slice(0, remaining);
     const totalStats = [
-      `Gesamt: ${result.stats.input}`,
-      `Gültig: ${result.stats.valid}`,
-      `Ungültig: ${result.stats.invalid}`,
-      `Duplikate entfernt: ${result.stats.duplicatesRemoved}`,
+      t("emailSender.statsTotal", { count: result.stats.input }),
+      t("emailSender.statsValid", { count: result.stats.valid }),
+      t("emailSender.statsInvalid", { count: result.stats.invalid }),
+      t("emailSender.statsDuplicates", { count: result.stats.duplicatesRemoved }),
     ].join(" · ");
     const overflow = fresh.length - accepted.length;
     const parts: string[] = [totalStats];
-    if (overflow > 0) parts.push(`${overflow} über dem Limit (${limit}) ignoriert.`);
+    if (overflow > 0) parts.push(t("emailSender.overflowIgnored", { count: overflow, limit }));
     setNotice(parts.join(" · "));
     if (result.notice) {
       setNotice((n) => (n ? `${n} ${result.notice ?? ""}` : (result.notice ?? null)));
@@ -62,7 +64,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
       const result = await parseRecipientFile(file);
       merge(result);
     } catch {
-      setFileError("Die Datei konnte nicht gelesen werden.");
+      setFileError(t("emailSender.fileError"));
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -73,7 +75,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
     setError(null);
     const result = parsePastedText(pasteText);
     if (result.stats.input === 0) {
-      setError("Keine Eingabe gefunden.");
+      setError(t("emailSender.noInput"));
       return;
     }
     merge(result);
@@ -103,10 +105,9 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
       {/* Upload + paste */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-dashed border-border p-4">
-          <Label>Datei importieren (TXT, CSV, PDF)</Label>
+          <Label>{t("emailSender.importFile")}</Label>
           <p className="mb-3 text-xs text-muted-foreground">
-            PDF-Auswertung nutzt die Text-Ebene (bzw. einen Binär-Fallback). Ohne Text-Ebene werden
-            keine Adressen erfunden, sondern klar gekennzeichnet.
+            {t("emailSender.pdfNote")}
           </p>
           <Button
             type="button"
@@ -115,7 +116,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
             onClick={() => fileRef.current?.click()}
             loading={busy}
           >
-            <Upload className="h-4 w-4" /> Datei auswählen
+            <Upload className="h-4 w-4" /> {t("emailSender.chooseFile")}
           </Button>
           <input
             ref={fileRef}
@@ -128,17 +129,17 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
         </div>
 
         <div className="rounded-lg border border-border p-4">
-          <Label htmlFor="recipient-paste">Adressen einfügen</Label>
+          <Label htmlFor="recipient-paste">{t("emailSender.pasteAddresses")}</Label>
           <Textarea
             id="recipient-paste"
             rows={4}
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder={"z. B. max@example.com, Muster GmbH <kontakt@example.com>"}
+            placeholder={t("emailSender.pastePh")}
             className="mb-2"
           />
           <Button type="button" variant="outline" size="sm" onClick={handlePaste} disabled={!pasteText.trim()}>
-            <Plus className="h-4 w-4" /> Übernehmen
+            <Plus className="h-4 w-4" /> {t("emailSender.apply")}
           </Button>
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         </div>
@@ -150,7 +151,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
           <Users className="h-4 w-4 text-muted-foreground" />
           {notice && <span className="text-muted-foreground">{notice}</span>}
           {value.length > 0 && (
-            <Badge variant="secondary">{value.length} Empfänger ({remaining} frei)</Badge>
+            <Badge variant="secondary">{t("emailSender.recipientsCount", { count: value.length, free: remaining })}</Badge>
           )}
         </div>
       )}
@@ -161,11 +162,11 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
-                <th className="px-3 py-2 font-medium">E-Mail</th>
-                <th className="px-3 py-2 font-medium">Firma</th>
-                <th className="px-3 py-2 font-medium">Kontakt</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2" aria-label="Aktion" />
+                <th className="px-3 py-2 font-medium">{t("emailSender.email")}</th>
+                <th className="px-3 py-2 font-medium">{t("emailSender.company")}</th>
+                <th className="px-3 py-2 font-medium">{t("emailSender.contact")}</th>
+                <th className="px-3 py-2 font-medium">{t("emailSender.status")}</th>
+                <th className="px-3 py-2" aria-label={t("emailSender.actionAria")} />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -176,7 +177,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
                       value={row.email}
                       onChange={(e) => updateRow(index, { email: e.target.value })}
                       className={`h-8 text-xs ${row.status === "invalid" ? "border-red-300" : ""}`}
-                      aria-label="E-Mail-Adresse"
+                      aria-label={t("emailSender.emailAria")}
                     />
                   </td>
                   <td className="px-3 py-1.5">
@@ -184,7 +185,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
                       value={row.company}
                       onChange={(e) => updateRow(index, { company: e.target.value })}
                       className="h-8 text-xs"
-                      aria-label="Firma"
+                      aria-label={t("emailSender.company")}
                     />
                   </td>
                   <td className="px-3 py-1.5">
@@ -192,14 +193,14 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
                       value={row.contact_name}
                       onChange={(e) => updateRow(index, { contact_name: e.target.value })}
                       className="h-8 text-xs"
-                      aria-label="Kontaktperson"
+                      aria-label={t("emailSender.contactAria")}
                     />
                   </td>
                   <td className="px-3 py-1.5">
                     {row.status === "valid" ? (
-                      <Badge variant="success">Gültig</Badge>
+                      <Badge variant="success">{t("emailSender.valid")}</Badge>
                     ) : (
-                      <Badge variant="destructive">Ungültig</Badge>
+                      <Badge variant="destructive">{t("emailSender.invalid")}</Badge>
                     )}
                   </td>
                   <td className="px-3 py-1.5 text-right">
@@ -207,7 +208,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
                       type="button"
                       onClick={() => removeRow(index)}
                       className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                      aria-label={`${row.email} entfernen`}
+                      aria-label={t("emailSender.removeAria", { email: row.email })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -221,9 +222,7 @@ export function RecipientImport({ value, onChange, limit }: RecipientImportProps
 
       {value.length === 0 && !notice && (
         <Alert variant="info">
-          Noch keine Empfänger. Füge Adressen per Datei-Upload oder Einfügen hinzu. Firma und Kontakt
-          bleiben leer, wenn sie nicht explizit in einer CSV-Spalte stehen — sie werden niemals aus
-          der E-Mail-Adresse geraten.
+          {t("emailSender.emptyRecipientsHint")}
         </Alert>
       )}
     </div>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { CampaignStatusBadge, RecipientStatusBadge } from "@/components/email-sender/status-badge";
+import { useI18n } from "@/lib/i18n/client";
 import {
   queueStart,
   queuePause,
@@ -17,23 +18,8 @@ import {
   removeFailedRecipient,
   exportFailedCsv,
 } from "@/lib/email/actions";
-import type { CampaignDetail as CampaignDetailData, EmailEvent } from "@/lib/email/types";
-import { formatDateTime } from "@/lib/utils";
+import type { CampaignDetail as CampaignDetailData } from "@/lib/email/types";
 import { ArrowLeft, Send, Pause, Play, Square, RefreshCw, Trash2, Download, Clock } from "lucide-react";
-
-const EVENT_LABELS: Record<EmailEvent["event_type"], string> = {
-  created: "Angelegt",
-  updated: "Aktualisiert",
-  queued: "In Warteschlange eingereiht",
-  started: "Versand gestartet",
-  paused: "Pausiert",
-  resumed: "Fortgesetzt",
-  stopped: "Gestoppt",
-  recipient_sent: "E-Mail gesendet",
-  recipient_failed: "Zustellung fehlgeschlagen",
-  retried: "Wiederholung eingereiht",
-  completed: "Abgeschlossen",
-};
 
 interface CampaignDetailProps {
   initial: CampaignDetailData;
@@ -42,6 +28,7 @@ interface CampaignDetailProps {
 
 export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
   const router = useRouter();
+  const { t, formatDateTime } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -81,7 +68,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.error ?? "Aktion fehlgeschlagen.");
+        setError(result.error ?? t("emailSender.actionFailed"));
       } else if (result.message) {
         setInfo(result.message);
       }
@@ -105,13 +92,13 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <Link href="/email-sender" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> Zurück zum E-Mail Sender
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t("emailSender.back")}
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{campaign.title}</h1>
             <p className="mt-1 text-muted-foreground">
-              Betreff: {campaign.subject || "–"} · erstellt {formatDateTime(campaign.created_at)}
+              {t("emailSender.subjectLine", { subject: campaign.subject || "–" })} · {t("emailSender.createdOn", { date: formatDateTime(campaign.created_at) })}
             </p>
           </div>
           <CampaignStatusBadge status={campaign.status} />
@@ -120,9 +107,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
 
       {startFailed && (
         <Alert variant="warning">
-          Die Kampagne wurde angelegt, konnte aber nicht in die Warteschlange gestellt werden
-          (z. B. Gmail-Anbindung nicht konfiguriert). Verwende „Start&ldquo;, sobald die Anbindung
-          eingerichtet ist.
+          {t("emailSender.startFailed")}
         </Alert>
       )}
       {error && <Alert variant="error">{error}</Alert>}
@@ -131,15 +116,15 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
       {/* Controls */}
       <Card>
         <CardHeader>
-          <CardTitle>Versandsteuerung</CardTitle>
-          <CardDescription>Statusübergänge werden serverseitig protokolliert.</CardDescription>
+          <CardTitle>{t("emailSender.controls")}</CardTitle>
+          <CardDescription>{t("emailSender.controlsDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Metric label="Gesamt" value={m.total} />
-            <Metric label="Gesendet" value={m.sent} accent="text-emerald-700" />
-            <Metric label="Verbleibend" value={m.remaining} accent="text-amber-700" />
-            <Metric label="Fehlgeschlagen" value={m.failed} accent="text-red-700" />
+            <Metric label={t("emailSender.total")} value={m.total} />
+            <Metric label={t("emailSender.sent")} value={m.sent} accent="text-emerald-700" />
+            <Metric label={t("emailSender.remaining")} value={m.remaining} accent="text-amber-700" />
+            <Metric label={t("emailSender.failed")} value={m.failed} accent="text-red-700" />
           </div>
           <Progress value={m.progressPercent} />
 
@@ -149,7 +134,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
               onClick={() => run(() => queueStart(campaign.id))}
               disabled={pending || m.total === 0 || campaign.status === "sent" || campaign.status === "sending"}
             >
-              <Send className="h-4 w-4" /> Start
+              <Send className="h-4 w-4" /> {t("common.start")}
             </Button>
             <Button
               size="sm"
@@ -157,7 +142,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
               onClick={() => run(() => queuePause(campaign.id))}
               disabled={pending || (campaign.status !== "pending" && campaign.status !== "sending")}
             >
-              <Pause className="h-4 w-4" /> Pause
+              <Pause className="h-4 w-4" /> {t("common.pause")}
             </Button>
             <Button
               size="sm"
@@ -165,7 +150,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
               onClick={() => run(() => queueResume(campaign.id))}
               disabled={pending || campaign.status !== "paused"}
             >
-              <Play className="h-4 w-4" /> Resume
+              <Play className="h-4 w-4" /> {t("common.resume")}
             </Button>
             <Button
               size="sm"
@@ -173,26 +158,22 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
               onClick={() => run(() => queueStop(campaign.id))}
               disabled={pending || campaign.status === "stopped" || campaign.status === "sent"}
             >
-              <Square className="h-4 w-4" /> Stop
+              <Square className="h-4 w-4" /> {t("common.stop")}
             </Button>
           </div>
 
           {canEdit && (
             <p className="text-xs text-muted-foreground">
-              Hinweis: Solange die Kampagne noch nicht gestartet ist, können Inhalte und Empfänger
-              über „Bearbeiten&ldquo; angepasst werden (siehe unten).
+              {t("emailSender.editHint")}
             </p>
           )}
           {campaign.status === "pending" && (
             <p className="text-xs text-amber-700">
-              In Warteschlange — der Versand wird vom Server-Worker übernommen (ein Empfänger nach
-              dem anderen, mit Tageslimit). Es wurden noch keine E-Mails gesendet; der Status wird
-              erst durch eine Bestätigung von Gmail aktualisiert. Beim Schließen des Browsers wird
-              keine Fortsetzung behauptet.
+              {t("emailSender.pendingNote")}
             </p>
           )}
           {campaign.last_error && (
-            <p className="text-xs text-red-700">Letzter Fehler: {campaign.last_error}</p>
+            <p className="text-xs text-red-700">{t("emailSender.lastError", { error: campaign.last_error })}</p>
           )}
         </CardContent>
       </Card>
@@ -201,25 +182,25 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>Fehlerhafte E-Mails</CardTitle>
+            <CardTitle>{t("emailSender.failedTitle")}</CardTitle>
             <CardDescription>
-              Wiederholen, einzeln entfernen oder als CSV exportieren.
+              {t("emailSender.failedDesc")}
             </CardDescription>
           </div>
           {failedRecipients.length > 0 && (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => run(() => retryFailed(campaign.id))} disabled={pending}>
-                <RefreshCw className="h-3.5 w-3.5" /> Alle wiederholen
+                <RefreshCw className="h-3.5 w-3.5" /> {t("emailSender.retryAll")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => void handleExport()} disabled={pending}>
-                <Download className="h-3.5 w-3.5" /> Export
+                <Download className="h-3.5 w-3.5" /> {t("emailSender.export")}
               </Button>
             </div>
           )}
         </CardHeader>
         <CardContent>
           {failedRecipients.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine fehlgeschlagenen Zustellungen.</p>
+            <p className="text-sm text-muted-foreground">{t("emailSender.emptyFailedDetail")}</p>
           ) : (
             <div className="divide-y divide-border">
               {failedRecipients.map((r) => (
@@ -227,8 +208,8 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-slate-900">{r.email}</div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {r.failure_reason ?? "Kein Grund angegeben"}
-                      {r.rate_limited ? " · Rate-Limit" : ""}
+                      {r.failure_reason ?? t("emailSender.noReason")}
+                      {r.rate_limited ? ` · ${t("emailSender.rateLimited")}` : ""}
                     </div>
                   </div>
                   <div className="hidden text-xs text-muted-foreground sm:block">
@@ -240,7 +221,7 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
                     onClick={() => run(() => removeFailedRecipient(campaign.id, r.id))}
                     disabled={pending}
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Entfernen
+                    <Trash2 className="h-3.5 w-3.5" /> {t("emailSender.remove")}
                   </Button>
                 </div>
               ))}
@@ -252,25 +233,24 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
       {/* Recipients */}
       <Card>
         <CardHeader>
-          <CardTitle>Empfänger ({recipients.length})</CardTitle>
+          <CardTitle>{t("emailSender.recipientsTitle", { count: recipients.length })}</CardTitle>
           <CardDescription>
-            E-Mail, Firma, Kontakt und Zustellstatus. Gmail-Nachrichten-/Thread-IDs erscheinen nach
-            bestätigtem Versand.
+            {t("emailSender.recipientsTableDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {recipients.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Empfänger in dieser Kampagne.</p>
+            <p className="text-sm text-muted-foreground">{t("emailSender.emptyRecipients")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="px-2 py-2 font-medium">E-Mail</th>
-                    <th className="px-2 py-2 font-medium">Firma</th>
-                    <th className="px-2 py-2 font-medium">Kontakt</th>
-                    <th className="px-2 py-2 font-medium">Status</th>
-                    <th className="px-2 py-2 font-medium">Details</th>
+                    <th className="px-2 py-2 font-medium">{t("emailSender.email")}</th>
+                    <th className="px-2 py-2 font-medium">{t("emailSender.company")}</th>
+                    <th className="px-2 py-2 font-medium">{t("emailSender.contact")}</th>
+                    <th className="px-2 py-2 font-medium">{t("emailSender.status")}</th>
+                    <th className="px-2 py-2 font-medium">{t("common.details")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -287,10 +267,10 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
                           ? r.failure_reason
                           : r.status === "sent"
                             ? r.gmail_message_id
-                              ? `Message ${r.gmail_message_id}`
+                              ? t("emailSender.messageId", { id: r.gmail_message_id })
                               : formatDateTime(r.sent_at ?? r.updated_at)
                             : r.status === "pending" && r.next_attempt_at
-                              ? `Wiederholung: ${formatDateTime(r.next_attempt_at)}`
+                              ? t("emailSender.retryAt", { date: formatDateTime(r.next_attempt_at) })
                               : formatDateTime(r.updated_at)}
                       </td>
                     </tr>
@@ -307,20 +287,20 @@ export function CampaignDetail({ initial, startFailed }: CampaignDetailProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-4.5 w-4.5 text-muted-foreground" />
-            Verlauf
+            {t("emailSender.timeline")}
           </CardTitle>
-          <CardDescription>Serverseitig protokollierte Ereignisse.</CardDescription>
+          <CardDescription>{t("emailSender.timelineDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {events.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Ereignisse.</p>
+            <p className="text-sm text-muted-foreground">{t("emailSender.emptyEvents")}</p>
           ) : (
             <ol className="space-y-3">
               {events.map((e) => (
                 <li key={e.id} className="flex gap-3">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/50" />
                   <div>
-                    <div className="text-sm text-slate-800">{EVENT_LABELS[e.event_type]}</div>
+                    <div className="text-sm text-slate-800">{t(`emailSender.events.${e.event_type}`)}</div>
                     {e.message && <div className="text-xs text-muted-foreground">{e.message}</div>}
                     <div className="text-xs text-muted-foreground">{formatDateTime(e.created_at)}</div>
                   </div>

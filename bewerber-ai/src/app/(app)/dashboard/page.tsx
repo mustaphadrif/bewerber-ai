@@ -3,16 +3,20 @@ import type { Metadata } from "next";
 import { getFullProfile } from "@/lib/profile";
 import { listApplications } from "@/lib/applications";
 import { profileCompletion } from "@/lib/cv";
+import { getI18n } from "@/lib/i18n/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/applications/status-badge";
-import { formatDate } from "@/lib/utils";
 import { ArrowRight, FileText, PenLine, Briefcase, CheckCircle2, Circle } from "lucide-react";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("pages.dashboard") };
+}
 
 export default async function DashboardPage() {
+  const { t, formatDate } = await getI18n();
   const full = await getFullProfile();
   const applications = await listApplications();
   const completion = profileCompletion(full);
@@ -25,24 +29,24 @@ export default async function DashboardPage() {
   const offers = applications.filter((a) => a.status === "angebot").length;
 
   const checklist = [
-    { label: "Persönliche Daten", done: Boolean(p?.first_name && p?.last_name), href: "/profile" },
-    { label: "Kontaktdaten", done: Boolean(p?.email && p?.phone), href: "/profile" },
-    { label: "Berufliches Profil", done: Boolean(p?.headline && p?.about), href: "/profile" },
-    { label: "Berufserfahrung", done: full.experience.length > 0, href: "/profile" },
-    { label: "Ausbildung", done: full.education.length > 0, href: "/profile" },
-    { label: "Fähigkeiten & Sprachen", done: full.skills.length > 0 && full.languages.length > 0, href: "/profile" },
+    { label: t("dashboard.personalData"), done: Boolean(p?.first_name && p?.last_name), href: "/profile" },
+    { label: t("dashboard.contactData"), done: Boolean(p?.email && p?.phone), href: "/profile" },
+    { label: t("dashboard.professionalProfile"), done: Boolean(p?.headline && p?.about), href: "/profile" },
+    { label: t("dashboard.experience"), done: full.experience.length > 0, href: "/profile" },
+    { label: t("dashboard.education"), done: full.education.length > 0, href: "/profile" },
+    { label: t("dashboard.skillsLanguages"), done: full.skills.length > 0 && full.languages.length > 0, href: "/profile" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Hallo{p?.first_name ? `, ${p.first_name}` : ""} 👋
+          {t("dashboard.hello")}{p?.first_name ? `, ${p.first_name}` : ""} 👋
         </h1>
         <p className="mt-1 text-muted-foreground">
           {completion < 100
-            ? "Dein Profil ist noch nicht vollständig – so kommen deine Unterlagen in Form."
-            : "Dein Profil ist vollständig. Viel Erfolg bei deinen Bewerbungen!"}
+            ? t("dashboard.incomplete")
+            : t("dashboard.complete")}
         </p>
       </div>
 
@@ -52,20 +56,20 @@ export default async function DashboardPage() {
           <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
             <div className="flex-1">
               <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="font-medium text-slate-800">Profil-Vollständigkeit</span>
+                <span className="font-medium text-slate-800">{t("dashboard.completeness")}</span>
                 <span className="font-semibold text-primary">{completion}%</span>
               </div>
               <Progress value={completion} className="h-2.5" />
               <p className="mt-3 text-sm text-muted-foreground">
                 {completion < 40
-                  ? "Nimm dir 5 Minuten für das Onboarding – danach sind Lebenslauf und Anschreiben startklar."
-                  : "Fast geschafft! Ergänze die fehlenden Punkte für ein starkes Profil."}
+                  ? t("dashboard.onboardingHintLow")
+                  : t("dashboard.onboardingHintHigh")}
               </p>
             </div>
             <Link href="/onboarding" className="shrink-0">
               <Button>
-                {p?.onboarding_step && p.onboarding_step > 1 ? "Onboarding fortsetzen" : "Onboarding starten"}
-                <ArrowRight className="h-4 w-4" />
+                {p?.onboarding_step && p.onboarding_step > 1 ? t("dashboard.onboardingContinue") : t("dashboard.onboardingStart")}
+                <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               </Button>
             </Link>
           </CardContent>
@@ -74,18 +78,18 @@ export default async function DashboardPage() {
 
       {/* Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={Briefcase} label="Aktive Bewerbungen" value={activeApplications.length} />
-        <MetricCard icon={CheckCircle2} label="Interviews" value={interviews} accent="bg-amber-50 text-amber-700" />
-        <MetricCard icon={CheckCircle2} label="Angebote" value={offers} accent="bg-emerald-50 text-emerald-700" />
-        <MetricCard icon={FileText} label="Profil-Vollständigkeit" value={`${completion}%`} accent="bg-blue-50 text-primary" />
+        <MetricCard icon={Briefcase} label={t("dashboard.activeApplications")} value={activeApplications.length} />
+        <MetricCard icon={CheckCircle2} label={t("dashboard.interviews")} value={interviews} accent="bg-amber-50 text-amber-700" />
+        <MetricCard icon={CheckCircle2} label={t("dashboard.offers")} value={offers} accent="bg-emerald-50 text-emerald-700" />
+        <MetricCard icon={FileText} label={t("dashboard.completeness")} value={`${completion}%`} accent="bg-blue-50 text-primary" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Checklist */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Profil-Checkliste</CardTitle>
-            <CardDescription>Alles für deine Unterlagen</CardDescription>
+            <CardTitle>{t("dashboard.checklistTitle")}</CardTitle>
+            <CardDescription>{t("dashboard.checklistSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
             {checklist.map((item) => (
@@ -111,11 +115,11 @@ export default async function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader className="flex-row items-center justify-between">
             <div>
-              <CardTitle>Letzte Bewerbungen</CardTitle>
-              <CardDescription>Dein aktueller Stand</CardDescription>
+              <CardTitle>{t("dashboard.recentTitle")}</CardTitle>
+              <CardDescription>{t("dashboard.recentSubtitle")}</CardDescription>
             </div>
             <Link href="/bewerbungen">
-              <Button variant="outline" size="sm">Alle ansehen</Button>
+              <Button variant="outline" size="sm">{t("common.viewAll")}</Button>
             </Link>
           </CardHeader>
           <CardContent>
@@ -123,13 +127,13 @@ export default async function DashboardPage() {
               <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-10 text-center">
                 <Briefcase className="h-8 w-8 text-slate-300" />
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Noch keine Bewerbungen</p>
+                  <p className="text-sm font-medium text-slate-700">{t("dashboard.emptyTitle")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Lege deine erste Bewerbung an und behalte den Überblick.
+                    {t("dashboard.emptyText")}
                   </p>
                 </div>
                 <Link href="/bewerbungen/new">
-                  <Button size="sm">Bewerbung anlegen</Button>
+                  <Button size="sm">{t("dashboard.newApplication")}</Button>
                 </Link>
               </div>
             ) : (
@@ -152,9 +156,9 @@ export default async function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <QuickAction href="/lebenslauf" icon={FileText} title="Lebenslauf" text="Vorlage wählen, ansehen und als PDF laden." />
-        <QuickAction href="/anschreiben" icon={PenLine} title="Anschreiben" text="Auf Basis deines verifizierten Profils erstellen." />
-        <QuickAction href="/unternehmen" icon={Briefcase} title="Unternehmen" text="Passende Arbeitgeber entdecken." />
+        <QuickAction href="/lebenslauf" icon={FileText} title={t("dashboard.quickCvTitle")} text={t("dashboard.quickCvText")} />
+        <QuickAction href="/anschreiben" icon={PenLine} title={t("dashboard.quickLetterTitle")} text={t("dashboard.quickLetterText")} />
+        <QuickAction href="/unternehmen" icon={Briefcase} title={t("dashboard.quickCompaniesTitle")} text={t("dashboard.quickCompaniesText")} />
       </div>
     </div>
   );

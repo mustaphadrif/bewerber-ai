@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { useI18n } from "@/lib/i18n/client";
 import {
   signInWithPassword,
   signUpWithPassword,
@@ -16,6 +17,7 @@ import {
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -43,9 +45,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         router.push("/dashboard");
         router.refresh();
       } else {
-        setNotice(
-          "Konto erstellt. Prüfe dein Postfach für den Bestätigungslink – danach kannst du dich anmelden."
-        );
+        setNotice(t("auth.signupNotice"));
       }
     });
   }
@@ -64,51 +64,51 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
           <div>
-            <Label htmlFor="fullName">Vollständiger Name</Label>
-            <Input id="fullName" name="fullName" autoComplete="name" placeholder="Max Mustermann" />
+            <Label htmlFor="fullName">{t("auth.fullName")}</Label>
+            <Input id="fullName" name="fullName" autoComplete="name" placeholder={t("auth.namePlaceholder")} />
           </div>
         )}
         <div>
-          <Label htmlFor="email">E-Mail</Label>
-          <Input id="email" name="email" type="email" required autoComplete="email" placeholder="max@beispiel.de" />
+          <Label htmlFor="email">{t("auth.email")}</Label>
+          <Input id="email" name="email" type="email" required autoComplete="email" placeholder={t("auth.emailPlaceholder")} />
         </div>
         <div>
-          <Label htmlFor="password">Passwort</Label>
-          <Input id="password" name="password" type="password" required minLength={8} autoComplete={isLogin ? "current-password" : "new-password"} placeholder="Mindestens 8 Zeichen" />
+          <Label htmlFor="password">{t("auth.password")}</Label>
+          <Input id="password" name="password" type="password" required minLength={8} autoComplete={isLogin ? "current-password" : "new-password"} placeholder={t("auth.passwordPlaceholder")} />
         </div>
 
         {error && <Alert variant="error">{error}</Alert>}
         {notice && <Alert variant="success">{notice}</Alert>}
 
         <Button type="submit" className="w-full" size="lg" loading={pending}>
-          {isLogin ? "Anmelden" : "Konto erstellen"}
+          {isLogin ? t("auth.loginButton") : t("auth.signupButton")}
         </Button>
       </form>
 
       <div className="my-6 flex items-center gap-3">
         <Separator className="flex-1" />
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">oder</span>
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("common.or")}</span>
         <Separator className="flex-1" />
       </div>
 
       <Button type="button" variant="outline" className="w-full" size="lg" onClick={handleGoogle} loading={pending}>
         <GoogleIcon />
-        Mit Google fortfahren
+        {t("auth.googleButton")}
       </Button>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {isLogin ? (
           <>
-            Noch kein Konto?{" "}
+            {t("auth.noAccount")}{" "}
             <Link href="/signup" className="font-medium text-primary hover:underline">
-              Jetzt kostenlos registrieren
+              {t("auth.registerFree")}
             </Link>
           </>
         ) : (
           <>
-            Bereits registriert?{" "}
+            {t("auth.hasAccount")}{" "}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Anmelden
+              {t("auth.loginLink")}
             </Link>
           </>
         )}
