@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import { Bold, Italic, List, ListOrdered, Link2 } from "lucide-react";
 
 interface RichTextEditorProps {
@@ -25,18 +26,26 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
   // Initialize the DOM once; subsequent updates come from user input only.
   useEffect(() => {
-    const el = editorRef.current;
-    if (el && el.innerHTML !== value) {
-      el.innerHTML = value;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const el = editorRef.current;
+  if (!el) return;
+
+  const sanitizedHtml = DOMPurify.sanitize(value);
+
+  if (el.innerHTML !== sanitizedHtml) {
+    el.innerHTML = sanitizedHtml;
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   function emit() {
-    const el = editorRef.current;
-    if (!el) return;
-    onChange(el.innerHTML, el.innerText);
-  }
+  const el = editorRef.current;
+  if (!el) return;
+
+  const sanitizedHtml = DOMPurify.sanitize(el.innerHTML);
+
+  onChange(sanitizedHtml, el.innerText);
+}
 
   function exec(command: string, arg?: string) {
     editorRef.current?.focus();
