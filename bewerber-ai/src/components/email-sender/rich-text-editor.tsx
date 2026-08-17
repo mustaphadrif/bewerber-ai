@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import DOMPurify from "dompurify";
+import { useI18n } from "@/lib/i18n/client";
 import { Bold, Italic, List, ListOrdered, Link2 } from "lucide-react";
 
 interface RichTextEditorProps {
@@ -20,6 +21,7 @@ const TOOLBAR_BUTTON =
  * inserted at the caret position.
  */
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const { t } = useI18n();
   const editorRef = useRef<HTMLDivElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -75,24 +77,24 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   return (
     <div className="overflow-hidden rounded-lg border border-input bg-card shadow-xs focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/50">
       <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/40 px-2 py-1.5">
-        <button type="button" className={TOOLBAR_BUTTON} title="Fett" aria-label="Fett" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("bold")}>
+        <button type="button" className={TOOLBAR_BUTTON} title={t("emailSender.editor.bold")} aria-label={t("emailSender.editor.bold")} onMouseDown={(e) => e.preventDefault()} onClick={() => exec("bold")}>
           <Bold className="h-4 w-4" />
         </button>
-        <button type="button" className={TOOLBAR_BUTTON} title="Kursiv" aria-label="Kursiv" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("italic")}>
+        <button type="button" className={TOOLBAR_BUTTON} title={t("emailSender.editor.italic")} aria-label={t("emailSender.editor.italic")} onMouseDown={(e) => e.preventDefault()} onClick={() => exec("italic")}>
           <Italic className="h-4 w-4" />
         </button>
-        <button type="button" className={TOOLBAR_BUTTON} title="Aufzählung" aria-label="Aufzählungsliste" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("insertUnorderedList")}>
+        <button type="button" className={TOOLBAR_BUTTON} title={t("emailSender.editor.bulletList")} aria-label={t("emailSender.editor.bulletListAria")} onMouseDown={(e) => e.preventDefault()} onClick={() => exec("insertUnorderedList")}>
           <List className="h-4 w-4" />
         </button>
-        <button type="button" className={TOOLBAR_BUTTON} title="Nummerierte Liste" aria-label="Nummerierte Liste" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("insertOrderedList")}>
+        <button type="button" className={TOOLBAR_BUTTON} title={t("emailSender.editor.numberedList")} aria-label={t("emailSender.editor.numberedList")} onMouseDown={(e) => e.preventDefault()} onClick={() => exec("insertOrderedList")}>
           <ListOrdered className="h-4 w-4" />
         </button>
-        <button type="button" className={TOOLBAR_BUTTON} title="Link einfügen" aria-label="Link einfügen" onMouseDown={(e) => e.preventDefault()} onClick={handleLink}>
+        <button type="button" className={TOOLBAR_BUTTON} title={t("emailSender.editor.link")} aria-label={t("emailSender.editor.link")} onMouseDown={(e) => e.preventDefault()} onClick={handleLink}>
           <Link2 className="h-4 w-4" />
         </button>
 
         {linkOpen && (
-          <span className="flex items-center gap-1 pl-1">
+          <span className="flex items-center gap-1 ps-1">
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
@@ -104,14 +106,14 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               className="h-8 w-48 rounded-md border border-input bg-card px-2 text-xs"
               autoFocus
             />
-            <button type="button" className={TOOLBAR_BUTTON} onClick={handleLink} aria-label="Link bestätigen">
-              OK
+            <button type="button" className={TOOLBAR_BUTTON} onClick={handleLink} aria-label={t("emailSender.editor.linkConfirm")}>
+              {t("emailSender.editor.ok")}
             </button>
           </span>
         )}
 
         <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
-        <span className="mr-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Variablen</span>
+        <span className="me-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("emailSender.editor.variables")}</span>
         {(["company", "contact_name", "email"] as const).map((name) => (
           <button
             key={name}
@@ -119,7 +121,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
             className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertVariable(name)}
-            title={`{{${name}}} einfügen`}
+            title={t("emailSender.editor.insertVar", { name })}
           >
             {'{{'}
             {name}

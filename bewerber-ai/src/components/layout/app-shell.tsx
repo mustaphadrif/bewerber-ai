@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { useI18n } from "@/lib/i18n/client";
 import { signOutAction } from "@/lib/auth-actions";
 import { initials } from "@/lib/utils";
 import {
@@ -27,22 +29,23 @@ export interface AppUser {
 }
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/lebenslauf", label: "Lebenslauf", icon: FileText },
-  { href: "/anschreiben", label: "Anschreiben", icon: PenLine },
-  { href: "/bewerbungen", label: "Bewerbungen", icon: Briefcase },
-  { href: "/unternehmen", label: "Unternehmen", icon: Building2 },
-  { href: "/email-sender", label: "E-Mail Sender", icon: Mail },
-  { href: "/profile", label: "Profil", icon: User },
-  { href: "/settings", label: "Einstellungen", icon: Settings },
-];
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/lebenslauf", labelKey: "nav.cv", icon: FileText },
+  { href: "/anschreiben", labelKey: "nav.coverLetter", icon: PenLine },
+  { href: "/bewerbungen", labelKey: "nav.applications", icon: Briefcase },
+  { href: "/unternehmen", labelKey: "nav.companies", icon: Building2 },
+  { href: "/email-sender", labelKey: "nav.emailSender", icon: Mail },
+  { href: "/profile", labelKey: "nav.profile", icon: User },
+  { href: "/settings", labelKey: "nav.settings", icon: Settings },
+] as const;
 
 export function AppShell({ user, children }: { user: AppUser; children: React.ReactNode }) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const name = user.fullName || user.email || "Benutzer";
+  const name = user.fullName || user.email || t("nav.user");
 
   function handleSignOut() {
     setSigningOut(true);
@@ -65,8 +68,8 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
             }`}
           >
             <item.icon className="h-4.5 w-4.5" />
-            {item.label}
-            {item.href === "/lebenslauf" && <Badge variant="blue" className="ml-auto text-[10px]">PDF</Badge>}
+            {t(item.labelKey)}
+            {item.href === "/lebenslauf" && <Badge variant="blue" className="ms-auto text-[10px]">{t("nav.pdf")}</Badge>}
           </Link>
         );
       })}
@@ -76,7 +79,7 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border/70 bg-card px-3 py-6 lg:flex">
+      <aside className="fixed inset-y-0 start-0 z-30 hidden w-60 flex-col border-e border-border/70 bg-card px-3 py-6 lg:flex">
         <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 px-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <FileText className="h-4.5 w-4.5" />
@@ -94,9 +97,12 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
               <div className="truncate text-xs text-muted-foreground">{user.email}</div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-slate-600" onClick={handleSignOut} loading={signingOut}>
-            <LogOut className="h-4 w-4" /> Abmelden
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher compact />
+            <Button variant="ghost" size="sm" className="flex-1 justify-start text-slate-600" onClick={handleSignOut} loading={signingOut}>
+              <LogOut className="h-4 w-4" /> {t("common.logout")}
+            </Button>
+          </div>
         </div>
       </aside>
 
@@ -108,7 +114,7 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
           </span>
           <span className="font-semibold tracking-tight">Bewerber</span>
         </Link>
-        <button onClick={() => setMobileOpen((v) => !v)} aria-label="Menü" className="rounded-lg p-2 hover:bg-muted">
+        <button onClick={() => setMobileOpen((v) => !v)} aria-label={t("nav.menu")} className="rounded-lg p-2 hover:bg-muted">
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
@@ -116,11 +122,14 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
       {mobileOpen && (
         <div className="fixed inset-0 z-30 bg-white pt-14 lg:hidden">
           <div className="flex h-full flex-col gap-4 overflow-y-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <LanguageSwitcher compact />
+            </div>
             {nav}
             <div className="mt-auto space-y-2 border-t border-border pt-4">
               <div className="truncate text-sm font-medium text-slate-800">{name}</div>
               <Button variant="ghost" size="sm" className="w-full justify-start text-slate-600" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4" /> Abmelden
+                <LogOut className="h-4 w-4" /> {t("common.logout")}
               </Button>
             </div>
           </div>
@@ -128,7 +137,7 @@ export function AppShell({ user, children }: { user: AppUser; children: React.Re
       )}
 
       {/* Main */}
-      <main className="min-w-0 flex-1 px-4 pb-16 pt-20 sm:px-6 lg:ml-60 lg:px-10 lg:pt-10">
+      <main className="min-w-0 flex-1 px-4 pb-16 pt-20 sm:px-6 lg:ms-60 lg:px-10 lg:pt-10">
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
     </div>

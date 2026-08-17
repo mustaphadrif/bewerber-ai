@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { activateEntitlement } from "@/lib/email/actions";
-import { formatDate } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/client";
 
 interface EntitlementPanelProps {
   limit: number;
@@ -25,6 +25,7 @@ interface EntitlementPanelProps {
  */
 export function EntitlementPanel({ limit, status, activatedAt, dailySent }: EntitlementPanelProps) {
   const router = useRouter();
+  const { t, formatDate } = useI18n();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export function EntitlementPanel({ limit, status, activatedAt, dailySent }: Enti
         setError(result.error);
         return;
       }
-      setSuccess(result.message ?? "Aktivierung erfolgreich.");
+      setSuccess(result.message ?? t("emailSender.activated"));
       setCode("");
       router.refresh();
     });
@@ -50,11 +51,11 @@ export function EntitlementPanel({ limit, status, activatedAt, dailySent }: Enti
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Nutzung & Limit
-          {status === "premium" && <Badge variant="success">Premium</Badge>}
+          {t("emailSender.usageTitle")}
+          {status === "premium" && <Badge variant="success">{t("emailSender.premium")}</Badge>}
         </CardTitle>
         <CardDescription>
-          Tageslimit (gesendete E-Mails heute) und Empfängerlimit pro Kampagne.
+          {t("emailSender.usageDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -63,40 +64,40 @@ export function EntitlementPanel({ limit, status, activatedAt, dailySent }: Enti
             <div className="text-xl font-semibold text-slate-900">
               {dailySent} / {limit}
             </div>
-            <div className="text-xs text-muted-foreground">Tageslimit (heute)</div>
+            <div className="text-xs text-muted-foreground">{t("emailSender.dailyLimit")}</div>
           </div>
           <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
             <div className="text-xl font-semibold text-slate-900">{limit}</div>
-            <div className="text-xs text-muted-foreground">Empfänger pro Kampagne</div>
+            <div className="text-xs text-muted-foreground">{t("emailSender.perCampaign")}</div>
           </div>
         </div>
 
         {activatedAt && (
           <p className="text-xs text-muted-foreground">
-            Premium aktiviert am {formatDate(activatedAt)}.
+            {t("emailSender.premiumActivated", { date: formatDate(activatedAt) })}
           </p>
         )}
 
         {status === "standard" ? (
           <form onSubmit={submit} className="space-y-2">
-            <Label htmlFor="activation-code">Aktivierungscode einlösen</Label>
+            <Label htmlFor="activation-code">{t("emailSender.redeem")}</Label>
             <div className="flex gap-2">
               <Input
                 id="activation-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Aktivierungscode"
+                placeholder={t("emailSender.codePh")}
                 autoComplete="off"
               />
               <Button type="submit" loading={pending} disabled={!code.trim()}>
-                Aktivieren
+                {t("emailSender.activate")}
               </Button>
             </div>
             {error && <Alert variant="error">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
           </form>
         ) : (
-          <p className="text-xs text-emerald-700">Premium ist aktiv — Limit 400 Empfänger pro Kampagne.</p>
+          <p className="text-xs text-emerald-700">{t("emailSender.premiumNote")}</p>
         )}
       </CardContent>
     </Card>

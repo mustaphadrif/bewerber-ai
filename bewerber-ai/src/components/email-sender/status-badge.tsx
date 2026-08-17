@@ -1,17 +1,8 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n/client";
 import type { CampaignStatus, RecipientStatus } from "@/lib/email/types";
-
-const CAMPAIGN_LABELS: Record<CampaignStatus, string> = {
-  draft: "Entwurf",
-  pending: "In Warteschlange",
-  sending: "Läuft",
-  paused: "Pausiert",
-  stopped: "Gestoppt",
-  sent: "Gesendet",
-  failed: "Fehlgeschlagen",
-};
 
 const CAMPAIGN_VARIANTS: Record<CampaignStatus, "secondary" | "warning" | "success" | "destructive" | "blue"> = {
   draft: "secondary",
@@ -23,13 +14,6 @@ const CAMPAIGN_VARIANTS: Record<CampaignStatus, "secondary" | "warning" | "succe
   failed: "destructive",
 };
 
-const RECIPIENT_LABELS: Record<RecipientStatus, string> = {
-  pending: "Bereit",
-  sending: "Wird gesendet",
-  sent: "Gesendet",
-  failed: "Fehlgeschlagen",
-};
-
 const RECIPIENT_VARIANTS: Record<RecipientStatus, "secondary" | "warning" | "success" | "destructive"> = {
   pending: "secondary",
   sending: "warning",
@@ -38,11 +22,11 @@ const RECIPIENT_VARIANTS: Record<RecipientStatus, "secondary" | "warning" | "suc
 };
 
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
-  return <Badge variant={CAMPAIGN_VARIANTS[status]}>{CAMPAIGN_LABELS[status]}</Badge>;
+  const { t } = useI18n();
+  return <Badge variant={CAMPAIGN_VARIANTS[status]}>{t(`emailSender.campaignStatuses.${status}`)}</Badge>;
 }
 
 export function RecipientStatusBadge({ status }: { status: RecipientStatus }) {
-  return <Badge variant={RECIPIENT_VARIANTS[status]}>{RECIPIENT_LABELS[status]}</Badge>;
+  const { t } = useI18n();
+  return <Badge variant={RECIPIENT_VARIANTS[status]}>{t(`emailSender.recipientStatuses.${status}`)}</Badge>;
 }
-
-export { CAMPAIGN_LABELS, RECIPIENT_LABELS };

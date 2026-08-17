@@ -15,6 +15,7 @@ import { AttachmentList } from "@/components/email-sender/attachment-list";
 import { createCampaign, queueStart } from "@/lib/email/actions";
 import { loadCampaignDraft, saveCampaignDraft, clearCampaignDraft, formatSavedAt } from "@/lib/email/draft";
 import { useOnlineStatus } from "@/lib/email/use-online-status";
+import { useI18n } from "@/lib/i18n/client";
 import type { AttachmentMeta, CampaignDraft, CampaignRecipientInput, DraftRecipient } from "@/lib/email/types";
 import { ArrowLeft, Save, Send, Trash2, Info } from "lucide-react";
 
@@ -32,6 +33,7 @@ interface CampaignComposerProps {
  */
 export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const online = useOnlineStatus() === "online";
 
   const [title, setTitle] = useState("");
@@ -57,9 +59,10 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
       setRecipients(draft.recipients);
       setAttachments(draft.attachments);
       if (draft.savedAt) {
-        setDraftInfo(`Entwurf vom ${formatSavedAt(draft.savedAt)} Uhr geladen.`);
+        setDraftInfo(t("emailSender.draftLoaded", { time: formatSavedAt(draft.savedAt) }));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced autosave of unsent content.
@@ -157,13 +160,13 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link href="/email-sender" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> Zurück zum E-Mail Sender
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t("emailSender.back")}
         </Link>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Neue Kampagne</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("emailSender.composerTitle")}</h1>
             <p className="mt-1 text-muted-foreground">
-              Erstelle Inhalt und Empfängerliste. Versendet wird erst nach dem Start.
+              {t("emailSender.composerSubtitle")}
             </p>
           </div>
           <OnlineStatus />
@@ -177,34 +180,33 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
             <Info className="h-4 w-4" /> {draftInfo}
           </span>
           <Button type="button" variant="ghost" size="sm" onClick={discardDraft}>
-            <Trash2 className="h-3.5 w-3.5" /> Verwerfen
+            <Trash2 className="h-3.5 w-3.5" /> {t("emailSender.discard")}
           </Button>
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Kampagnendaten</CardTitle>
-          <CardDescription>Name und Betreffzeile</CardDescription>
+          <CardTitle>{t("emailSender.campaignData")}</CardTitle>
+          <CardDescription>{t("emailSender.campaignDataDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="c-title">Kampagnenname *</Label>
-            <Input id="c-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Sommeraktion 2026" />
+            <Label htmlFor="c-title">{t("emailSender.name")}</Label>
+            <Input id="c-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("emailSender.namePh")} />
           </div>
           <div>
-            <Label htmlFor="c-subject">Betreff</Label>
-            <Input id="c-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="z. B. Ihr Ansprechpartner bei Muster GmbH" />
+            <Label htmlFor="c-subject">{t("emailSender.subject")}</Label>
+            <Input id="c-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("emailSender.subjectPh")} />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Nachricht</CardTitle>
+          <CardTitle>{t("emailSender.message")}</CardTitle>
           <CardDescription>
-            Formatierung: fett, kursiv, Listen und Links. Bilder werden über die Anhangsliste
-            ergänzt (konzeptuell unterstützt, kein Inline-Bild).
+            {t("emailSender.messageDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -214,21 +216,19 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
               setBodyHtml(html);
               setBodyText(text);
             }}
-            placeholder="Nachricht eingeben…"
+            placeholder={t("emailSender.messagePh")}
           />
           <Alert variant="info" className="text-xs">
-            {`Personalisierung: Füge über die Schaltflächen im Editor Variablen ein. Beispieltexte
-            (fiktiv): „Sehr geehrte/r {{contact_name}}, bei {{company}} freuen wir uns auf den Kontakt
-            unter {{email}}.“ — Ungesetzte Variablen bleiben leer.`}
+            {t("emailSender.personalization")}
           </Alert>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Empfänger</CardTitle>
+          <CardTitle>{t("emailSender.recipients")}</CardTitle>
           <CardDescription>
-            Import (TXT/CSV/PDF) oder Einfügen — Limit: {initialLimit} pro Kampagne.
+            {t("emailSender.recipientsDesc", { limit: initialLimit })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -238,10 +238,9 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Anhänge</CardTitle>
+          <CardTitle>{t("emailSender.attachments")}</CardTitle>
           <CardDescription>
-            Dateien werden beim Hinzufügen sicher auf dem Server gespeichert und beim Versand vom
-            Server-Worker an Gmail angehängt — im Browser bleiben nur Metadaten.
+            {t("emailSender.attachmentsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -252,14 +251,12 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            Hinweis: Schließt du den Browser, bleibt der Entwurf lokal gespeichert. Der Versandstatus
-            wird serverseitig geführt — nach einer Verbindungsunterbrechung wird er erst bei erneuter
-            Verbindung aktualisiert.
+            {t("emailSender.composerNote")}
           </p>
           <div className="flex shrink-0 gap-2">
             {draftInfo && (
               <Button type="button" variant="outline" onClick={discardDraft}>
-                <Trash2 className="h-4 w-4" /> Verwerfen
+                <Trash2 className="h-4 w-4" /> {t("emailSender.discard")}
               </Button>
             )}
             <Button
@@ -268,7 +265,7 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
               onClick={() => submit(false)}
               disabled={!online || pending}
             >
-              <Save className="h-4 w-4" /> Als Entwurf speichern
+              <Save className="h-4 w-4" /> {t("emailSender.saveDraft")}
             </Button>
             <Button
               type="button"
@@ -276,7 +273,7 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
               loading={pending}
               disabled={!online || pending || recipients.length === 0 || invalidCount > 0}
             >
-              <Send className="h-4 w-4" /> Erstellen &amp; in Warteschlange
+              <Send className="h-4 w-4" /> {t("emailSender.createAndQueue")}
             </Button>
           </div>
         </CardContent>
@@ -284,13 +281,12 @@ export function CampaignComposer({ initialLimit }: CampaignComposerProps) {
 
       {!online && (
         <Alert variant="warning">
-          Du bist offline. Es kann nichts gesendet werden — der Entwurf wird weiterhin lokal gespeichert.
+          {t("emailSender.offlineWarning")}
         </Alert>
       )}
       {online && invalidCount > 0 && (
         <Alert variant="warning">
-          {invalidCount} Empfängerzeile(n) enthalten eine ungültige E-Mail-Adresse und werden beim
-          Speichern nicht übernommen.
+          {t("emailSender.invalidWarning", { count: invalidCount })}
         </Alert>
       )}
     </div>

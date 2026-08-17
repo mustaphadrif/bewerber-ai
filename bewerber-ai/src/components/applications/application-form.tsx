@@ -12,11 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert } from "@/components/ui/alert";
 import { createApplication } from "@/lib/applications";
 import { APPLICATION_STATUSES } from "@/lib/db";
+import { useI18n } from "@/lib/i18n/client";
 import type { Company } from "@/lib/db";
 import { ArrowLeft } from "lucide-react";
 
 export function ApplicationForm({ companies }: { companies: Company[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const prefillCompany = searchParams.get("company") ?? "";
 
@@ -79,74 +81,74 @@ export function ApplicationForm({ companies }: { companies: Company[] }) {
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <Link href="/bewerbungen" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> Zurück zu Bewerbungen
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t("applications.back")}
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Neue Bewerbung</h1>
-        <p className="mt-1 text-muted-foreground">Alle Felder außer Unternehmen & Position sind optional.</p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("applications.newTitle")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("applications.newSubtitle")}</p>
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
 
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription>Angaben zur Stelle</CardDescription>
+          <CardTitle>{t("applications.details")}</CardTitle>
+          <CardDescription>{t("applications.detailsDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Label htmlFor="a-company-pick">Aus Verzeichnis wählen (optional)</Label>
+                <Label htmlFor="a-company-pick">{t("applications.pickFromDir")}</Label>
                 <Select id="a-company-pick" value={form.company_id} onChange={(e) => handleCompanyPick(e.target.value)}>
-                  <option value="">– Eigenes Unternehmen eingeben –</option>
+                  <option value="">{t("applications.ownCompany")}</option>
                   {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </Select>
               </div>
               <div>
-                <Label htmlFor="a-company">Unternehmen *</Label>
-                <Input id="a-company" value={form.company_name} onChange={set("company_name")} placeholder="z. B. SAP SE" required />
+                <Label htmlFor="a-company">{t("applications.company")}</Label>
+                <Input id="a-company" value={form.company_name} onChange={set("company_name")} placeholder={t("applications.companyPh")} required />
               </div>
               <div>
-                <Label htmlFor="a-title">Position *</Label>
-                <Input id="a-title" value={form.job_title} onChange={set("job_title")} placeholder="z. B. Senior Product Manager" required />
+                <Label htmlFor="a-title">{t("applications.position")}</Label>
+                <Input id="a-title" value={form.job_title} onChange={set("job_title")} placeholder={t("applications.positionPh")} required />
               </div>
               <div>
-                <Label htmlFor="a-status">Status</Label>
+                <Label htmlFor="a-status">{t("applications.status")}</Label>
                 <Select id="a-status" value={form.status} onChange={set("status")}>
-                  {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{t(`applications.statuses.${s}`)}</option>)}
                 </Select>
               </div>
               <div>
-                <Label htmlFor="a-location">Standort</Label>
-                <Input id="a-location" value={form.location} onChange={set("location")} placeholder="Berlin" />
+                <Label htmlFor="a-location">{t("applications.location")}</Label>
+                <Input id="a-location" value={form.location} onChange={set("location")} placeholder={t("applications.locationPh")} />
               </div>
               <div>
-                <Label htmlFor="a-salary">Gehaltsspanne</Label>
-                <Input id="a-salary" value={form.salary_range} onChange={set("salary_range")} placeholder="z. B. 70.000–85.000 €" />
+                <Label htmlFor="a-salary">{t("applications.salary")}</Label>
+                <Input id="a-salary" value={form.salary_range} onChange={set("salary_range")} placeholder={t("applications.salaryPh")} />
               </div>
               <div>
-                <Label htmlFor="a-url">Stellenanzeige (URL)</Label>
-                <Input id="a-url" type="url" value={form.job_url} onChange={set("job_url")} placeholder="https://…" />
+                <Label htmlFor="a-url">{t("applications.url")}</Label>
+                <Input id="a-url" type="url" value={form.job_url} onChange={set("job_url")} placeholder={t("applications.urlPh")} />
               </div>
               <div>
-                <Label htmlFor="a-applied">Beworben am</Label>
+                <Label htmlFor="a-applied">{t("applications.appliedAt")}</Label>
                 <Input id="a-applied" type="date" value={form.applied_at} onChange={set("applied_at")} />
               </div>
               <div>
-                <Label htmlFor="a-next">Nächster Schritt am</Label>
+                <Label htmlFor="a-next">{t("applications.nextStepAt")}</Label>
                 <Input id="a-next" type="date" value={form.next_step_at} onChange={set("next_step_at")} />
               </div>
               <div className="sm:col-span-2">
-                <Label htmlFor="a-notes">Notizen</Label>
-                <Textarea id="a-notes" rows={3} value={form.notes} onChange={set("notes")} placeholder="z. B. Ansprechpartner, Erinnerungen…" />
+                <Label htmlFor="a-notes">{t("applications.notes")}</Label>
+                <Textarea id="a-notes" rows={3} value={form.notes} onChange={set("notes")} placeholder={t("applications.notesPh")} />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Link href="/bewerbungen">
-                <Button type="button" variant="ghost">Abbrechen</Button>
+                <Button type="button" variant="ghost">{t("common.cancel")}</Button>
               </Link>
               <Button type="submit" loading={pending} disabled={!form.company_name.trim() || !form.job_title.trim()}>
-                Bewerbung anlegen
+                {t("applications.newApplication")}
               </Button>
             </div>
           </form>

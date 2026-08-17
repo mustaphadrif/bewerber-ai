@@ -66,6 +66,13 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Arabic (RTL): prefer fonts with strong Arabic glyph coverage. */
+[dir="rtl"] body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma,
+    "Noto Sans Arabic", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
 /* Subtle page backdrop for premium feel */
 .app-backdrop {
   background-image:

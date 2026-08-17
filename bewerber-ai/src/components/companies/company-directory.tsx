@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/client";
 import type { Company } from "@/lib/db";
 import { Building2, ExternalLink, Search } from "lucide-react";
 
@@ -16,6 +17,7 @@ import { Building2, ExternalLink, Search } from "lucide-react";
  * the architecture supports server-side enrichment later (see lib/companies.ts).
  */
 export function CompanyDirectory({ companies, industries }: { companies: Company[]; industries: string[] }) {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [industry, setIndustry] = useState("alle");
 
@@ -35,24 +37,24 @@ export function CompanyDirectory({ companies, industries }: { companies: Company
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Unternehmens-Entdeckung</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("companies.title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          Kuratiertes Verzeichnis bekannter Arbeitgeber – ohne Datenkratzen. Ein Klick führt dich zur Karriereseite.
+          {t("companies.subtitle")}
         </p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Unternehmen, Stadt oder Stichwort suchen…"
-            className="pl-10"
+            placeholder={t("companies.searchPh")}
+            className="ps-10"
           />
         </div>
         <Select value={industry} onChange={(e) => setIndustry(e.target.value)} className="sm:w-64">
-          <option value="alle">Alle Branchen</option>
+          <option value="alle">{t("companies.allIndustries")}</option>
           {industries.map((i) => (
             <option key={i} value={i}>{i}</option>
           ))}
@@ -60,14 +62,14 @@ export function CompanyDirectory({ companies, industries }: { companies: Company
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} {filtered.length === 1 ? "Unternehmen" : "Unternehmen"} gefunden
+        {t("companies.found", { count: filtered.length })}
       </p>
 
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
             <Building2 className="h-8 w-8 text-slate-300" />
-            <p className="text-sm text-muted-foreground">Keine Treffer für deine Suche.</p>
+            <p className="text-sm text-muted-foreground">{t("companies.empty")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -96,11 +98,11 @@ export function CompanyDirectory({ companies, industries }: { companies: Company
                       rel="noreferrer"
                       className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-input bg-card px-3 text-xs font-medium text-slate-700 shadow-xs transition-colors hover:bg-muted"
                     >
-                      Karriereseite <ExternalLink className="h-3.5 w-3.5" />
+                      {t("companies.careerPage")} <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                   <Link href={`/bewerbungen/new?company=${encodeURIComponent(c.name)}`}>
-                    <Button size="sm">Bewerbung anlegen</Button>
+                    <Button size="sm">{t("companies.newApplication")}</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -110,7 +112,7 @@ export function CompanyDirectory({ companies, industries }: { companies: Company
       )}
 
       <p className="text-xs text-muted-foreground">
-        Daten stammen aus einem kuratierten Verzeichnis (Seed-Migration). Eine spätere Anreicherung über APIs ist architektonisch vorbereitet – es wird nichts von Websites extrahiert.
+        {t("companies.footerNote")}
       </p>
     </div>
   );

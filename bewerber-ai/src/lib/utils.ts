@@ -1,20 +1,34 @@
+import { localeTag, type Locale } from "@/lib/i18n/config";
+
 export function cn(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
 }
 
-export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "–";
+const DASH = "–";
+
+/**
+ * Locale-aware date formatting. `locale` is an optional 2-letter code
+ * ("de" | "en" | "ar"); when omitted the previous behavior (de-DE) is kept,
+ * so existing callers are unaffected.
+ */
+export function formatDate(iso: string | null | undefined, locale?: Locale): string {
+  if (!iso) return DASH;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "–";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  if (Number.isNaN(d.getTime())) return DASH;
+  const tag = locale ? localeTag(locale) : "de-DE";
+  return d.toLocaleDateString(tag, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "–";
+export function formatDateTime(iso: string | null | undefined, locale?: Locale): string {
+  if (!iso) return DASH;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "–";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) +
-    ", " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  if (Number.isNaN(d.getTime())) return DASH;
+  const tag = locale ? localeTag(locale) : "de-DE";
+  return (
+    d.toLocaleDateString(tag, { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    ", " +
+    d.toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit" })
+  );
 }
 
 export function initials(firstName?: string | null, lastName?: string | null): string {
