@@ -90,3 +90,411 @@ body {
   color: #1e293b;
   line-height: 1.55;
 }
+
+/* ── Motion layer: transitions, entrance animations, robot ───────────────────
+   Lightweight CSS/Web-Animations only (no framework). All effects use
+   transform/opacity and respect prefers-reduced-motion. */
+
+/* Page enter transition (template remounts on every navigation). */
+.page-enter {
+  animation: bwr-page-enter 240ms ease-out both;
+}
+@keyframes bwr-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtle entrance for cards / list surfaces. */
+.rise-in {
+  animation: bwr-rise-in 340ms ease-out both;
+}
+@keyframes bwr-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown / menu open. */
+.menu-pop {
+  animation: bwr-menu-pop 150ms ease-out both;
+  transform-origin: top end;
+}
+@keyframes bwr-menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile menu overlay slide. */
+.menu-slide {
+  animation: bwr-menu-slide 200ms ease-out both;
+}
+@keyframes bwr-menu-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Navigation progress bar ─────────────────────────────────────────────── */
+.bwr-navbar {
+  pointer-events: none;
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 70;
+}
+.bwr-navbar__track {
+  height: 2px;
+  background: transparent;
+}
+.bwr-navbar__bar {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), #38bdf8);
+  transform: scaleX(0);
+  transform-origin: start;
+  opacity: 0;
+  transition:
+    transform 200ms ease-out,
+    opacity 160ms ease-out;
+}
+.bwr-navbar__bar--on {
+  transform: scaleX(0.72);
+  opacity: 1;
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 120ms ease-out;
+}
+.bwr-navbar__bar--done {
+  transform: scaleX(1);
+  opacity: 1;
+  transition: transform 160ms ease-out, opacity 120ms ease-out;
+}
+
+.bwr-robot-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--border);
+  padding: 6px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.94);
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+.bwr-robot-pill--on {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ── AI loading robot (lightweight 3D-style SVG, self-contained) ─────────── */
+/* Character timeline: enter → greet → wave → laugh → building → success → exit */
+
+.robot3d {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: bwr3d-float 2.4s ease-in-out infinite;
+}
+@keyframes bwr3d-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.2px);
+  }
+}
+
+/* Head pose */
+.robot3d__head {
+  transform-box: view-box;
+  transform-origin: 50% 88%;
+  transition: transform 320ms ease-out;
+}
+.robot3d--greet .robot3d__head,
+.robot3d--wave .robot3d__head {
+  transform: rotate(-4deg);
+}
+
+/* Arms */
+.robot3d__arm {
+  transform-box: fill-box;
+  transform-origin: 50% 12%;
+  transition: transform 320ms ease-out;
+}
+/* Greet: right hand raised */
+.robot3d--greet .robot3d__arm--r {
+  transform: rotate(-58deg);
+}
+.robot3d--greet .robot3d__arm--l {
+  transform: rotate(8deg);
+}
+/* Wave: several natural waves */
+.robot3d--wave .robot3d__arm--r {
+  animation: bwr3d-wave 0.36s ease-in-out 4;
+  transform: rotate(-48deg);
+}
+@keyframes bwr3d-wave {
+  0%,
+  100% {
+    transform: rotate(-30deg);
+  }
+  50% {
+    transform: rotate(-64deg);
+  }
+}
+/* Building: subtle alternating arm work */
+.robot3d--build .robot3d__arm--l {
+  animation: bwr3d-arm-build 1.8s ease-in-out infinite;
+}
+.robot3d--build .robot3d__arm--r {
+  animation: bwr3d-arm-build 1.8s ease-in-out infinite 0.35s;
+}
+@keyframes bwr3d-arm-build {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+/* Expressions: eyes + mouth */
+.robot3d__eyes {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
+}
+.robot3d__eye-core,
+.robot3d__eye-glow {
+  transition: opacity 300ms ease-out;
+}
+/* Laugh/success: eyes brighten and squeeze into a happy expression */
+.robot3d--laugh .robot3d__eyes,
+.robot3d--success .robot3d__eyes {
+  transform: scale(1.14);
+}
+.robot3d--laugh .robot3d__eye-glow,
+.robot3d--success .robot3d__eye-glow {
+  opacity: 0.75;
+}
+.robot3d__mouth {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition: transform 240ms ease-out;
+}
+.robot3d--laugh .robot3d__mouth,
+.robot3d--success .robot3d__mouth {
+  transform: scale(1.2);
+}
+/* Laugh: short friendly bob + body pulse */
+.robot3d--laugh .robot3d__head {
+  animation: bwr3d-laugh-head 0.5s ease-in-out 2;
+}
+.robot3d--laugh .robot3d__body {
+  animation: bwr3d-laugh-body 0.5s ease-in-out 2;
+}
+@keyframes bwr3d-laugh-head {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-3.5deg);
+  }
+}
+@keyframes bwr3d-laugh-body {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+
+/* Hovering base glow ring (pulses with the float) */
+.robot3d__halo {
+  animation: bwr3d-halo 2.4s ease-in-out infinite;
+}
+@keyframes bwr3d-halo {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: scaleX(0.94);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scaleX(1.04);
+  }
+}
+
+/* Wave sparkles above the raised hand */
+.robot3d__sparkles {
+  opacity: 0;
+}
+.robot3d--wave .robot3d__sparkles {
+  animation: bwr3d-sparkles 0.36s ease-in-out 4;
+}
+@keyframes bwr3d-sparkles {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(1.5px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+.robot3d__sparkle {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+.robot3d--wave .robot3d__sparkle--1 {
+  animation: bwr3d-sparkle-pop 0.36s ease-in-out 4 0.05s;
+}
+.robot3d--wave .robot3d__sparkle--2 {
+  animation: bwr3d-sparkle-pop 0.36s ease-in-out 4 0.14s;
+}
+.robot3d--wave .robot3d__sparkle--3 {
+  animation: bwr3d-sparkle-pop 0.36s ease-in-out 4 0.22s;
+}
+@keyframes bwr3d-sparkle-pop {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Success: brighter eyes + check */
+.robot3d--success .robot3d__eye-glow {
+  opacity: 0.6;
+  transition: opacity 300ms ease-out;
+}
+.robot3d__check {
+  opacity: 0;
+  transform: scale(0.6);
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.robot3d--success .robot3d__check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Exit: smooth fade after success */
+.robot3d--exit {
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 300ms ease-in,
+    transform 300ms ease-in;
+}
+
+/* Building blocks: stack one by one next to the hand */
+.robot3d__block {
+  opacity: 0;
+}
+.robot3d--build .robot3d__block {
+  animation: bwr3d-block 1.7s ease-in-out infinite;
+}
+.robot3d--build .robot3d__block--1 {
+  animation-delay: 0.2s;
+}
+.robot3d--build .robot3d__block--2 {
+  animation-delay: 0.7s;
+}
+.robot3d--build .robot3d__block--3 {
+  animation-delay: 1.2s;
+}
+@keyframes bwr3d-block {
+  0% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.75);
+  }
+  28% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2.5px) scale(0.92);
+  }
+}
+
+/* ── Reduced motion: keep functionality, drop decorative animation ──────── */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .rise-in,
+  .menu-pop,
+  .menu-slide {
+    animation: none !important;
+  }
+  .bwr-navbar__bar,
+  .bwr-navbar__bar--on,
+  .bwr-navbar__bar--done {
+    transition-duration: 0ms !important;
+  }
+  .bwr-robot-pill {
+    display: none !important;
+  }
+  .robot3d,
+  .robot3d__arm,
+  .robot3d__head,
+  .robot3d__body,
+  .robot3d__block,
+  .robot3d__halo,
+  .robot3d__sparkles,
+  .robot3d__sparkle {
+    animation: none !important;
+    transition: none !important;
+  }
+  .robot3d__sparkles {
+    opacity: 0 !important;
+  }
+  .robot3d--greet .robot3d__arm--r,
+  .robot3d--greet .robot3d__arm--l {
+    transform: none !important;
+  }
+}
